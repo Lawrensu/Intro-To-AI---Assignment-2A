@@ -9,6 +9,14 @@ Example:
     python search.py test_cases/test1.txt BFS --simple
 """
 
+# The flow:
+# 1. User runs: python search.py test_cases/test1.txt BFS
+# 2. search.py parses command-line arguments
+# 3. Calls graph_parser to read the file
+# 4. Calls search_bfs() from search_algorithms.py
+# 5. Gets results back
+# 6. Calls format_output() to print results
+
 import sys
 from graph_parser import parse_input
 from search_algorithms import (
