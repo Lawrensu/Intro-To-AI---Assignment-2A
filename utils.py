@@ -152,6 +152,7 @@ def get_heuristic(node_coords: dict, current_node: int, goal_node: int,
         raise ValueError(f"Unknown heuristic type: {heuristic_type}")
 
 
+# Used by GBFS, A* and Hop Count
 def get_closest_destination_heuristic(node_coords: dict, current_node: int, 
                                       destinations: list, heuristic_type: str = 'euclidean') -> float:
     """
