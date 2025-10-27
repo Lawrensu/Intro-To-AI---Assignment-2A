@@ -374,6 +374,7 @@ def search_astar(graph: dict, node_coords: dict, origin: int, destinations: list
     # 1. Import heapq and initialize priority queue
     #    import heapq
     #    priority_queue = []
+    priority_queue = []
     
     # 2. Calculate initial f(n) = g(n) + h(n)
     #    g_value = 0  # Cost from origin
@@ -383,9 +384,16 @@ def search_astar(graph: dict, node_coords: dict, origin: int, destinations: list
     #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
     #    heapq.heappush(priority_queue, (f_value, origin, initial_node))
     #    nodes_created = 1
+    g_value = 0
+    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
+    f_value = g_value + h_value
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    heapq.heappush(priority_queue, (f_value, origin, initial_node))
+    nodes_created = 1
     
     # 3. Initialize visited set
     #    visited = set()
+    visited = set()
     
     # 4. Main loop: while priority_queue is not empty
     #    f_priority, node_id, current = heapq.heappop(priority_queue)
@@ -433,9 +441,36 @@ def search_astar(graph: dict, node_coords: dict, origin: int, destinations: list
     #        # Priority is f(n) = g(n) + h(n)
     #        heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
     #        nodes_created += 1
+    while priority_queue:
+        f_value, node_id, current = heapq.heappop(priority_queue)
+        if current.current_node in destinations:
+            return (current.current_node, nodes_created, current.path)
+        if current.current_node in visited:
+            continue
+        visited.add(current.current_node)
+        neighbors = graph.get(current.current_node, [])
+        for neighbor_id, edge_cost in neighbors:
+            if neighbor_id in visited:
+                continue
+            g_value = current.cost + edge_cost
+            h_value = get_closest_destination_heuristic(
+                node_coords, neighbor_id, destinations, 'euclidean'
+            )
+            f_value = g_value + h_value
+            new_path = current.path + [neighbor_id]
+            new_hops = current.hops + 1
+            new_node = SearchNode(
+                current_node=neighbor_id,
+                path=new_path,
+                cost=g_value,
+                hops=new_hops
+            )
+            heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
+            nodes_created += 1
     
     # 5. If loop ends without finding goal
     #    return (None, nodes_created, [])
+    return (None, nodes_created, [])
     
     nodes_created = 0
     return (None, nodes_created, [])
@@ -467,10 +502,13 @@ def search_hop_count(graph: dict, node_coords: dict, origin: int, destinations: 
     # 1. Define constant for hop estimation
     #    AVERAGE_EDGE_LENGTH = 5.0  # Assume average edge is 5 units
     #    This converts Euclidean distance to estimated number of hops
+    AVERAGE_EDGE_LENGTH = 5.0
+    
     
     # 2. Import heapq and initialize priority queue
     #    import heapq
     #    priority_queue = []
+    priority_queue = []
     
     # 3. Calculate initial f(n) = hops + h_hops(n)
     #    hops = 0  # No edges traversed yet
@@ -484,9 +522,16 @@ def search_hop_count(graph: dict, node_coords: dict, origin: int, destinations: 
     #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
     #    heapq.heappush(priority_queue, (f_value, origin, initial_node))
     #    nodes_created = 1
+    hops = 0
+    h_hops = get_closest_destination_heuristic(node_coords, origin, destinations, 'hop_estimate')
+    f_value = hops + h_hops
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    heapq.heappush(priority_queue, (f_value, origin, initial_node))
+    nodes_created = 1
     
     # 4. Initialize visited set
     #    visited = set()
+    visited = set()
     
     # 5. Main loop: while priority_queue is not empty
     #    f_priority, node_id, current = heapq.heappop(priority_queue)
@@ -534,9 +579,35 @@ def search_hop_count(graph: dict, node_coords: dict, origin: int, destinations: 
     #        # Priority is f(n) = hops + h_hops
     #        heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
     #        nodes_created += 1
-    
+    while priority_queue:
+        f_value, node_id, current = heapq.heappop(priority_queue)
+        if current.current_node in destinations:
+            return (current.current_node, nodes_created, current.path)
+        if current.current_node in visited:
+            continue
+        visited.add(current.current_node)
+        neighbors = graph.get(current.current_node, [])
+        for neighbor_id, edge_cost in neighbors:
+            if neighbor_id in visited:
+                continue
+            new_hops = current.hops + 1
+            h_hops = get_closest_destination_heuristic(
+                node_coords, neighbor_id, destinations, 'hop_estimate'
+            )
+            f_value = new_hops + h_hops
+            new_path = current.path + [neighbor_id]
+            new_cost = current.cost + edge_cost
+            new_node = SearchNode(
+                current_node=neighbor_id,
+                path=new_path,
+                cost=new_cost,
+                hops=new_hops
+            )
+            heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
+            nodes_created += 1
     # 6. If loop ends without finding goal
     #    return (None, nodes_created, [])
+    return (None, nodes_created, [])
     
     nodes_created = 0
     return (None, nodes_created, [])
