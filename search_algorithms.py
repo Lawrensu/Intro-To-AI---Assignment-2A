@@ -120,67 +120,57 @@ def search_bfs(graph: dict, node_coords: dict, origin: int, destinations: list) 
     Returns:
         tuple: (goal_node, nodes_created, path)
     """
-    # TODO: Jason - IMPLEMENT BFS
-    # Follow this pseudocode:
-    
-    # 1. Import and initialize queue
-    #    from collections import deque
-    #    queue = deque()
-    #    Use queue.append() to enqueue, queue.popleft() to dequeue (FIFO)
-    
-    # 2. Create initial SearchNode with origin
-    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    #    queue.append(initial_node)
-    #    nodes_created = 1
-    
-    # 3. Initialize visited set for GRAPH SEARCH
-    #    visited = set()
-    
-    # 4. Main loop: while queue is not empty
-    #    current = queue.popleft()  # Dequeue oldest node (FIFO)
-    #    
-    #    # Goal test
-    #    if current.current_node in destinations:
-    #        return (current.current_node, nodes_created, current.path)
-    #    
-    #    # Skip if visited
-    #    if current.current_node in visited:
-    #        continue
-    #    
-    #    # Mark as visited
-    #    visited.add(current.current_node)
-    #    
-    #    # Get neighbors and sort by node_id (ASCENDING for tie-breaking)
-    #    neighbors = graph.get(current.current_node, [])
-    #    neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
-    #    neighbor_list.sort(key=lambda x: x[0])  # Sort ascending
-    #    
-    #    # Expand neighbors
-    #    for neighbor_id, edge_cost in neighbor_list:
-    #        if neighbor_id in visited:
-    #            continue
-    #        
-    #        # Create new SearchNode
-    #        new_path = current.path + [neighbor_id]
-    #        new_cost = current.cost + edge_cost
-    #        new_hops = current.hops + 1
-    #        
-    #        new_node = SearchNode(
-    #            current_node=neighbor_id,
-    #            path=new_path,
-    #            cost=new_cost,
-    #            hops=new_hops
-    #        )
-    #        
-    #        queue.append(new_node)
-    #        nodes_created += 1
-    
-    # 5. If loop ends without finding goal
-    #    return (None, nodes_created, [])
-    
-    nodes_created = 0
-    return (None, nodes_created, [])
+    # Initialize queue
+    queue = deque()
+    # Create initial SearchNode and enqueue
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    queue.append(initial_node)
+    nodes_created = 1
 
+    # Visited set for GRAPH SEARCH
+    visited = set()
+
+    # Main loop
+    while queue:
+        current = queue.popleft()
+
+        # Goal test
+        if current.current_node in destinations:
+            return (current.current_node, nodes_created, current.path)
+
+        # Skip if visited
+        if current.current_node in visited:
+            continue
+
+        # Mark as visited
+        visited.add(current.current_node)
+
+        # Get neighbors and sort ascending by node_id for tie-breaking
+        neighbors = graph.get(current.current_node, [])
+        neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])
+
+        # Expand neighbors
+        for neighbor_id, edge_cost in neighbor_list:
+            if neighbor_id in visited:
+                continue
+
+            new_path = current.path + [neighbor_id]
+            new_cost = current.cost + edge_cost
+            new_hops = current.hops + 1
+
+            new_node = SearchNode(
+                current_node=neighbor_id,
+                path=new_path,
+                cost=new_cost,
+                hops=new_hops
+            )
+
+            queue.append(new_node)
+            nodes_created += 1
+
+    # No solution found
+    return (None, nodes_created, [])
 
 def search_ucs(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
