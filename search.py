@@ -25,7 +25,7 @@ from search_algorithms import (
     search_ucs,
     search_gbfs,
     search_astar,
-    search_hop_count
+    search_ida_star
 )
 from utils import format_output, format_output_simple
 
@@ -39,7 +39,8 @@ METHOD_MAP = {
     'GBFS': search_gbfs,
     'AS': search_astar,
     'ASTAR': search_astar,   # Alternative name for A*
-    'CUS2': search_hop_count  # Custom algorithm: Hop Count
+    'IDA': search_ida_star,
+    'IDASTAR': search_ida_star  # Alternative name for IDA*
 }
 
 
