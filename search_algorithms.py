@@ -250,7 +250,55 @@ def search_ucs(graph: dict, node_coords: dict, origin: int, destinations: list) 
     # 5. If loop ends without finding goal
     #    return (None, nodes_created, [])
     
-    nodes_created = 0
+    # Initialize priority queue (min-heap)
+    priority_queue = []
+    
+    # Create initial node and push with priority = cost (g = 0)
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    heapq.heappush(priority_queue, (0, origin, initial_node))
+    nodes_created = 1
+    
+    # Visited set for GRAPH SEARCH
+    visited = set()
+    
+    # Main loop
+    while priority_queue:
+        priority, node_id, current = heapq.heappop(priority_queue)
+        
+        # Goal test
+        if current.current_node in destinations:
+            return (current.current_node, nodes_created, current.path)
+        
+        # Skip if already visited
+        if current.current_node in visited:
+            continue
+        
+        # Mark visited
+        visited.add(current.current_node)
+        
+        # Expand neighbors
+        neighbors = graph.get(current.current_node, [])
+        for neighbor_id, edge_cost in neighbors:
+            if neighbor_id in visited:
+                continue
+            
+            # Compute new path cost g(n)
+            new_cost = current.cost + edge_cost
+            new_path = current.path + [neighbor_id]
+            new_hops = current.hops + 1
+            
+            new_node = SearchNode(
+                current_node=neighbor_id,
+                path=new_path,
+                cost=new_cost,
+                hops=new_hops
+            )
+            
+            # Push with (cost, node_id, node) so tie-breaks use node_id
+            heapq.heappush(priority_queue, (new_cost, neighbor_id, new_node))
+            nodes_created += 1
+    
+    # No solution found
     return (None, nodes_created, [])
 
 
