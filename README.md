@@ -53,7 +53,7 @@ python search.py PathFinder-test.txt CUS2
 | `UCS` | Uniform Cost Search | `CUS1` |
 | `GBFS` | Greedy Best-First Search | - |
 | `AS` | A* Search | `ASTAR` |
-| `IDA*` | Interative Deepning A* Search | `CUS2` |
+| `IDA` | Iterative Deepening A* Search | `IDASTAR`, `CUS2` |
 
 ## 👥 Team Member Assignments
 
