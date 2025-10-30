@@ -10,10 +10,10 @@
 
 | Team Member | Algorithm(s) | Status | File Location |
 |-------------|-------------|--------|---------------|
-| **Me (Team Leader)** | DFS | ✅ COMPLETE (Reference) | [`search_algorithms.py`](search_algorithms.py) |
-| **Jason** | BFS | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py) |
-| **Elyn** | UCS + GBFS | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py) |
-| **Faisal** | A* + IDA* | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py)  |
+| **Me (Team Leader)** | DFS | ✅ COMPLETE (Reference) | [`search_algorithms.py`](search_algorithms.py) line 7 |
+| **Jason** | BFS | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py) line 113 |
+| **Elyn** | UCS + GBFS | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py) lines 170, 227 |
+| **Faisal** | A* + IDA* | ✅ COMPLETE | [`search_algorithms.py`](search_algorithms.py) lines 290, 420 |
 
 ---
 
