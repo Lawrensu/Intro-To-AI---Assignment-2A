@@ -8,7 +8,7 @@ This project implements 6 tree-based search algorithms for route finding in dire
 - **UCS** (Uniform Cost Search)
 - **GBFS** (Greedy Best-First Search)
 - **A*** (A-Star Search)
-- **Hop Count** (Best-First Search with Hop Count)
+- **IDA*** (Iterative Deepening A*)
 
 All algorithms use **GRAPH SEARCH** with a visited set to avoid revisiting nodes.
 
@@ -53,7 +53,7 @@ python search.py PathFinder-test.txt CUS2
 | `UCS` | Uniform Cost Search | `CUS1` |
 | `GBFS` | Greedy Best-First Search | - |
 | `AS` | A* Search | `ASTAR` |
-| `CUS2` | Best-First Search with Hop Count | - |
+| `IDA*` | Interative Deepning A* Search | `CUS2` |
 
 ## 👥 Team Member Assignments
 
@@ -80,13 +80,13 @@ python search.py PathFinder-test.txt CUS2
   - **GBFS**: Priority = h(n) = Euclidean distance to goal
   - Use `heapq` with format `(priority, node_id, search_node)`
 
-### 🔨 Faisal: A* and Hop Count
+### 🔨 Faisal: A* and IDA*
 - **File**: `search_algorithms.py`
-- **Functions**: `search_astar()` and `search_hop_count()`
+- **Functions**: `search_astar()` and `search_ida_star()`
 - **What to do**: Follow the detailed pseudocode in both functions
 - **Key points**:
   - **A***: Priority = f(n) = g(n) + h(n)
-  - **Hop Count**: Priority = hops + h_hops, where hops is edge count (not cost!)
+  - **IDA***: Uses recursive DFS with f-bound, memory efficient O(bd)
 
 ## 📚 Implementation Guide
 
@@ -149,12 +149,58 @@ queue.append(node)      # Enqueue
 node = queue.popleft()  # Dequeue (FIFO)
 ```
 
-**Priority Queue (UCS, GBFS, A*, Hop Count)**
+**Priority Queue (UCS, GBFS, A*)**
 ```python
 import heapq
 pq = []
 heapq.heappush(pq, (priority, node_id, search_node))
 priority, node_id, node = heapq.heappop(pq)
+```
+
+**Recursive DFS (IDA*):**
+
+### SearchNode Creation
+```python
+def search_ida_star(...):
+    bound = initial_heuristic
+    
+    # Recursive helper function
+    def search(node, g, bound, visited):
+        nonlocal nodes_created  # ← Important!
+        
+        f = g + h(node)
+        
+        # Base case 1: Exceeded bound
+        if f > bound:
+            return (None, f)
+        
+        # Base case 2: Found goal
+        if is_goal(node):
+            return (node, None)
+        
+        # Recursive case: Try all neighbors
+        min_over = float('inf')
+        for neighbor in neighbors:
+            visited.add(neighbor)
+            result, new_bound = search(neighbor, g + cost, bound, visited)
+            visited.remove(neighbor)  # ← Backtrack!
+            
+            if result:
+                return (result, None)
+            
+            if new_bound < min_over:
+                min_over = new_bound
+        
+        return (None, min_over)
+    
+    # Iterative deepening loop
+    while True:
+        result, new_bound = search(initial, 0, bound, visited)
+        if result:
+            return result
+        if new_bound == float('inf'):
+            return None  # No solution
+        bound = new_bound  # Increase bound
 ```
 
 #### Tie-Breaking
@@ -222,11 +268,13 @@ h = get_closest_destination_heuristic(
 - Optimal with admissible heuristic
 - Euclidean distance is admissible
 
-#### Hop Count
-- Priority = `hops + h_hops`
-- **IMPORTANT**: `hops` = number of edges (NOT cost!)
-- `h_hops` = Euclidean distance / 5.0
-- Minimizes number of moves, ignoring costs
+#### IDA*
+- Uses recursive DFS with f(n) = g(n) + h(n) bounds
+- Memory efficient: O(bd) instead of A*'s O(b^d)
+- Optimal with admissible heuristic
+- **IMPORTANT**: No priority queue - uses recursion and backtracking
+- May create more nodes than A* (revisits across iterations)
+- Best for memory-constrained environments
 
 ## 🧪 Testing Your Algorithm
 
@@ -354,7 +402,6 @@ git checkout -b feature/your-algorithm
 # Example:
 git checkout -b feature/bfs
 git checkout -b feature/ucs-gbfs
-git checkout -b feature/astar-hopcount
 ```
 
 ### Committing Your Work
@@ -373,7 +420,7 @@ git push origin feature/your-algorithm
 ```
 
 ### Creating Pull Request
-1. Go to GitHub/GitLab
+1. Go to GitHub
 2. Click "New Pull Request"
 3. Select your branch
 4. Add description of what you implemented

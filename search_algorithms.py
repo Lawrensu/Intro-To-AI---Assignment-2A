@@ -321,68 +321,63 @@ def search_gbfs(graph: dict, node_coords: dict, origin: int, destinations: list)
     Returns:
         tuple: (goal_node, nodes_created, path)
     """
-    # TODO: Elyn - IMPLEMENT GBFS
-    # Follow this pseudocode:
+
+    #TODO: Elyn - IMPLEMENT GBFS
+
+    # Initialize priority queue (min-heap)
+    priority_queue = []
     
-    # 1. Import heapq and initialize priority queue
-    #    import heapq
-    #    priority_queue = []
-    
-    # 2. Calculate initial heuristic
-    #    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    #    heapq.heappush(priority_queue, (h_value, origin, initial_node))
-    #    nodes_created = 1
-    
-    # 3. Initialize visited set
-    #    visited = set()
-    
-    # 4. Main loop: while priority_queue is not empty
-    #    h_priority, node_id, current = heapq.heappop(priority_queue)
-    #    
-    #    # Goal test
-    #    if current.current_node in destinations:
-    #        return (current.current_node, nodes_created, current.path)
-    #    
-    #    # Skip if visited
-    #    if current.current_node in visited:
-    #        continue
-    #    
-    #    # Mark as visited
-    #    visited.add(current.current_node)
-    #    
-    #    # Get neighbors
-    #    neighbors = graph.get(current.current_node, [])
-    #    
-    #    # Expand neighbors
-    #    for neighbor_id, edge_cost in neighbors:
-    #        if neighbor_id in visited:
-    #            continue
-    #        
-    #        # Calculate heuristic h(n) = Euclidean distance to closest destination
-    #        h_value = get_closest_destination_heuristic(
-    #            node_coords, neighbor_id, destinations, 'euclidean'
-    #        )
-    #        
-    #        new_path = current.path + [neighbor_id]
-    #        new_cost = current.cost + edge_cost  # Track cost for completeness
-    #        new_hops = current.hops + 1
-    #        
-    #        new_node = SearchNode(
-    #            current_node=neighbor_id,
-    #            path=new_path,
-    #            cost=new_cost,
-    #            hops=new_hops
-    #        )
-    #        
-    #        # Priority is ONLY the heuristic h(n)
-    #        heapq.heappush(priority_queue, (h_value, neighbor_id, new_node))
-    #        nodes_created += 1
-    
-    # 5. If loop ends without finding goal
-    #    return (None, nodes_created, [])
-    
-    nodes_created = 0
+    # Calculate initial heuristic for origin
+    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    heapq.heappush(priority_queue, (h_value, origin, initial_node))
+    nodes_created = 1
+
+    # Visited set for GRAPH SEARCH
+    visited = set()
+
+    # Main loop
+    while priority_queue:
+        h_priority, node_id, current = heapq.heappop(priority_queue)
+
+        # Goal test
+        if current.current_node in destinations:
+            return (current.current_node, nodes_created, current.path)
+
+        # Skip if already visited
+        if current.current_node in visited:
+            continue
+
+        # Mark visited
+        visited.add(current.current_node)
+
+        # Expand neighbors
+        neighbors = graph.get(current.current_node, [])
+        for neighbor_id, edge_cost in neighbors:
+            if neighbor_id in visited:
+                continue
+
+            # Heuristic only (greedy): Euclidean distance to closest destination
+            h_neighbor = get_closest_destination_heuristic(
+                node_coords, neighbor_id, destinations, 'euclidean'
+            )
+
+            new_path = current.path + [neighbor_id]
+            new_cost = current.cost + edge_cost  # track cost for completeness
+            new_hops = current.hops + 1
+
+            new_node = SearchNode(
+                current_node=neighbor_id,
+                path=new_path,
+                cost=new_cost,
+                hops=new_hops
+            )
+
+            # Priority is the heuristic; neighbor_id used to break ties deterministically
+            heapq.heappush(priority_queue, (h_neighbor, neighbor_id, new_node))
+            nodes_created += 1
+
+    # No solution found
     return (None, nodes_created, [])
 
 
