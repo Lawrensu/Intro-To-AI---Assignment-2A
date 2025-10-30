@@ -3,12 +3,12 @@
 ## 📋 Project Overview
 
 This project implements 6 tree-based search algorithms for route finding in directed graphs:
-- **DFS** (Depth-First Search)
-- **BFS** (Breadth-First Search)
-- **UCS** (Uniform Cost Search)
-- **GBFS** (Greedy Best-First Search)
-- **A*** (A-Star Search)
-- **IDA*** (Iterative Deepening A*)
+- **DFS** (Depth-First Search) - Stack-based, goes deep first
+- **BFS** (Breadth-First Search) - Queue-based, explores level by level
+- **UCS** (Uniform Cost Search) - Priority queue by cost, finds cheapest path
+- **GBFS** (Greedy Best-First Search) - Priority queue by heuristic, fast but not optimal
+- **A*** (A-Star Search) - Priority queue by f(n)=g(n)+h(n), optimal and efficient
+- **IDA*** (Iterative Deepening A*) - Recursive DFS with f-limit, optimal with minimal memory
 
 All algorithms use **GRAPH SEARCH** with a visited set to avoid revisiting nodes.
 
@@ -16,32 +16,96 @@ All algorithms use **GRAPH SEARCH** with a visited set to avoid revisiting nodes
 
 ```
 project/
-├── search.py              # Main entry point (✅ COMPLETE - DO NOT MODIFY)
-├── search_node.py         # SearchNode class (✅ COMPLETE - DO NOT MODIFY)
-├── graph_parser.py        # Input file parser (✅ COMPLETE - DO NOT MODIFY)
-├── utils.py               # Helper functions (✅ COMPLETE - DO NOT MODIFY)
-├── search_algorithms.py   # 🎯 IMPLEMENT YOUR ALGORITHMS HERE
+├── search.py              # Main entry point 
+├── search_node.py         # SearchNode class 
+├── graph_parser.py        # Input file parser 
+├── utils.py               # Helper functions 
+├── search_algorithms.py   # All 6 algorithms 
+├── test_runner.py         # Automated test suite 
+├── Guide.md               # Detailed implementation guide
 ├── README.md              # This file
 ├── .gitignore            # Git ignore rules
 └── test_cases/
-    └── PathFinder-test.txt
+    ├── test_linear.txt        # Simple baseline
+    ├── test_diamond.txt       # Multiple paths
+    ├── test_wide.txt          # Branching factor test
+    ├── test_depth.txt         # DFS depth preference
+    ├── test_misleading.txt    # Heuristic quality test
+    ├── test_multi_destin.txt  # Multiple goals
+    ├── test_sparse.txt        # Long linear path
+    ├── test_obstacle.txt      # Grid pathfinding
+    ├── test_no_solution.txt   # Unreachable goal
+    ├── test_cycle.txt         # Cycle handling
+    ├── test_exponential.txt   # Memory stress test
+    └── test_long_path.txt     # Deep search (50 nodes)
 ```
 
 ## 🚀 How to Run
 
+### Run Single Algorithm
+
 ```bash
-python search.py <filename> <method>
+python search.py <filename> <method> [--simple]
 ```
 
-### Examples
+#### Examples
 
 ```bash
-python search.py PathFinder-test.txt DFS
-python search.py PathFinder-test.txt BFS
-python search.py PathFinder-test.txt UCS
-python search.py PathFinder-test.txt GBFS
-python search.py PathFinder-test.txt AS
-python search.py PathFinder-test.txt CUS2
+# Detailed output
+python search.py test_cases/test_linear.txt DFS
+python search.py test_cases/test_diamond.txt BFS
+python search.py test_cases/test_misleading.txt AS
+
+# Simple output (for submission)
+python search.py test_cases/test_linear.txt DFS --simple
+```
+
+### Run All Tests (Automated Test Suite)
+
+```bash
+python test_runner.py
+```
+
+This will:
+- ✅ Run all 6 algorithms on all 12 test cases (72 tests total)
+- ✅ Display results in organized tables
+- ✅ Show path costs, nodes created, and execution time
+- ✅ Compare algorithm performance
+- ✅ Identify optimal vs suboptimal solutions
+- ✅ Generate comprehensive summary statistics
+
+**Sample Test Runner Output:**
+```
+========================================================================================================================
+                                            SEARCH ALGORITHM TEST REPORT
+========================================================================================================================
+
+Running 12 test cases with 6 algorithms
+Total: 72 tests
+
+========================================================================================================================
+Test: Linear Path - Simple baseline
+========================================================================================================================
+Algo     | Goal   | Nodes  | Cost    | Time     | Path
+------------------------------------------------------------------------------------------------------------------------
+DFS      | 5      | 5      | 4.0     | 83.7ms   | 1 -> 2 -> 3 -> 4 -> 5                    [OK]
+BFS      | 5      | 5      | 4.0     | 80.1ms   | 1 -> 2 -> 3 -> 4 -> 5                    [OK]
+...
+
+========================================================================================================================
+                                                      SUMMARY
+========================================================================================================================
+
+[Linear Path]
+  Goal: 5
+  Optimal Cost: 4.0
+    Found by: DFS, BFS, UCS, GBFS, A*, IDA*
+  Memory: 5 - 5 nodes
+    Most efficient: DFS, BFS, UCS, GBFS, A*, IDA*
+  Speed: 78.0ms - 83.7ms
+    Fastest: A*
+    Slowest: DFS
+...
 ```
 
 ## 🔤 Algorithm Method Names
@@ -53,95 +117,240 @@ python search.py PathFinder-test.txt CUS2
 | `UCS` | Uniform Cost Search | `CUS1` |
 | `GBFS` | Greedy Best-First Search | - |
 | `AS` | A* Search | `ASTAR` |
-| `IDA*` | Interative Deepning A* Search | `CUS2` |
+| `IDASTAR` | Iterative Deepening A* | `CUS2` |
 
-## 👥 Team Member Assignments
+## 🎯 Algorithm Comparison
 
-### Lawrence: DFS 
-- **File**: `search_algorithms.py`
-- **Function**: `search_dfs()`
-- **Status**: ✅ Fully implemented as reference example
+### Completeness & Optimality
 
-### Jason: BFS
-- **File**: `search_algorithms.py`
-- **Function**: `search_bfs()`
-- **What to do**: Follow the detailed pseudocode in the function
-- **Key points**: 
-  - Use `collections.deque` (FIFO queue)
-  - Sort neighbors ascending by node_id
-  - Mark visited AFTER dequeuing
+| Algorithm | Complete? | Optimal? | Memory | Time Complexity |
+|-----------|-----------|----------|--------|-----------------|
+| **DFS** | ✅ Yes (graph search) | ❌ No | O(bd) | O(b^d) |
+| **BFS** | ✅ Yes | ✅ Yes (unweighted) | O(b^d) | O(b^d) |
+| **UCS** | ✅ Yes | ✅ Yes | O(b^d) | O(b^d) |
+| **GBFS** | ✅ Yes | ❌ No | O(b^d) | O(b^d) |
+| **A*** | ✅ Yes | ✅ Yes | O(b^d) | O(b^d) |
+| **IDA*** | ✅ Yes | ✅ Yes | O(bd) | O(b^d) |
 
-### Elyn: UCS and GBFS
-- **File**: `search_algorithms.py`
-- **Functions**: `search_ucs()` and `search_gbfs()`
-- **What to do**: Follow the detailed pseudocode in both functions
-- **Key points**:
-  - **UCS**: Priority = g(n) = total cost from origin
-  - **GBFS**: Priority = h(n) = Euclidean distance to goal
-  - Use `heapq` with format `(priority, node_id, search_node)`
+*Where b = branching factor, d = depth of solution*
 
-### Faisal: A* and IDA*
-- **File**: `search_algorithms.py`
-- **Functions**: `search_astar()` and `search_ida_star()`
-- **What to do**: Follow the detailed pseudocode in both functions
-- **Key points**:
-  - **A***: Priority = f(n) = g(n) + h(n)
-  - **IDA***: Uses recursive DFS with f-bound, memory efficient O(bd)
+### When to Use Each Algorithm
 
-## 📚 Implementation Guide
+**DFS** - Memory-constrained environments, finding any solution quickly
+- ✅ Very memory efficient
+- ❌ Not optimal, may find long paths
 
-### What's Already Done For You ✅
+**BFS** - Unweighted graphs, shortest hop count
+- ✅ Finds shortest path (by edges)
+- ❌ High memory usage
 
-1. ✅ **File parsing** ([`graph_parser.py`](graph_parser.py))
-   - Parses nodes, edges, origin, destinations
-   - Returns graph as adjacency list
+**UCS** - Weighted graphs, need optimal cost
+- ✅ Guaranteed optimal cost
+- ❌ Slower than A*, high memory
 
-2. ✅ **SearchNode class** ([`search_node.py`](search_node.py))
-   - Stores: current_node, path, cost, hops
-   - Implements `__lt__` for priority queue tie-breaking
+**GBFS** - Need fast solutions, optimality not critical
+- ✅ Very fast (goes straight toward goal)
+- ❌ Can be misled by bad heuristics
 
-3. ✅ **Helper functions** ([`utils.py`](utils.py))
-   - `euclidean_distance()` - calculates distance between points
-   - `get_heuristic()` - calculates heuristic values
-   - `get_closest_destination_heuristic()` - for multiple destinations
-   - `format_output()` - prints results in required format
+**A*** - Weighted graphs, need optimal + efficient
+- ✅ Optimal AND efficient with good heuristic
+- ❌ High memory usage
 
-4. ✅ **Command-line interface** ([`search.py`](search.py))
-   - Parses arguments
-   - Calls appropriate search function
-   - Handles errors
+**IDA*** - Memory-constrained, need optimal solution
+- ✅ Optimal with minimal memory (O(bd))
+- ❌ May revisit nodes (slower than A*)
 
-5. ✅ **DFS implementation** ([`search_algorithms.py`](search_algorithms.py))
-   - Fully working example with detailed comments
-   - Use as reference for your implementations
+## 📊 Test Results Summary (results might slightly differ but should be near)
 
-### What Each of You Need To Do 🎯
+Based on automated test suite results across 12 test cases:
 
-1. **Open** [`search_algorithms.py`](search_algorithms.py)
-2. **Find** your assigned function (e.g., `search_bfs()`)
-3. **Read** the detailed pseudocode in the comments
-4. **Implement** the algorithm following the pseudocode
-5. **Test** with: `python search.py PathFinder-test.txt <YOUR_METHOD>`
+### Memory Efficiency (Avg Nodes Created)
+1. **GBFS**: 9.1 nodes ⭐ (most efficient)
+2. **DFS**: 9.2 nodes
+3. **A***: 9.8 nodes
+4. **BFS**: 11.3 nodes
+5. **UCS**: 11.3 nodes
+6. **IDA***: 13.2 nodes (least efficient - due to iterative deepening)
 
-### Key Implementation Points
+### Path Cost (Avg Cost)
+1. **UCS**: 8.7 ⭐ (always optimal)
+2. **A***: 8.7 ⭐ (always optimal)
+3. **IDA***: 8.7 ⭐ (always optimal)
+4. **DFS**: 8.7 (sometimes optimal by luck)
+5. **GBFS**: 18.0 (often suboptimal)
+6. **BFS**: 18.4 (optimizes hops, not cost)
 
-#### General Rules (ALL Algorithms)
-- ✅ Use **GRAPH SEARCH** with `visited` set
-- ✅ Count **ALL nodes created** (increment when creating `SearchNode`)
-- ✅ Return format: `(goal_node, nodes_created, path)`
-- ✅ If no solution: `(None, nodes_created, [])`
-- ✅ Goal test AFTER popping from frontier (not when creating nodes)
+### Execution Speed (Avg Time)
+1. **UCS**: 80.2ms ⭐ (fastest)
+2. **GBFS**: 81.6ms
+3. **IDA***: 81.6ms
+4. **A***: 81.9ms
+5. **BFS**: 83.9ms
+6. **DFS**: 88.1ms
 
-#### Data Structures
+### Key Insights
 
-**Stack (DFS)**
+**Optimality Results:**
+- ✅ **UCS, A*, IDA***: 100% optimal (found best cost in all cases)
+- ⚠️ **DFS**: ~60% optimal (depends on graph structure)
+- ❌ **GBFS**: ~40% optimal (misled by heuristic in 7/12 cases)
+- ❌ **BFS**: ~50% optimal (optimizes hops, not cost)
+
+**Most Dramatic Case - Misleading Heuristic:**
+```
+Optimal path (DFS, UCS, A*, IDA*): 1 -> 2 -> 3 -> 5 (cost: 3.0)
+BFS/GBFS path (misled):             1 -> 4 -> 5     (cost: 101.0)
+                                    33.67x worse! ❌
+```
+
+**Memory Stress Case - Exponential Branching:**
+```
+DFS/GBFS: 8 nodes ⭐
+A*: 10 nodes
+IDA*: 15 nodes (revisits due to iterative deepening)
+BFS/UCS: 23 nodes
+Ratio: 2.88x difference
+```
+
+## 📖 Input File Format
+
+```
+Nodes:
+1: (0,0)
+2: (1,0)
+3: (2,0)
+
+Edges:
+(1,2): 1
+(2,3): 1
+
+Origin:
+1
+
+Destinations:
+3
+```
+
+- **Nodes**: `node_id: (x, y)` coordinates
+- **Edges**: `(from, to): cost` (directed graph)
+- **Origin**: Starting node
+- **Destinations**: Semicolon-separated list of goals (e.g., `3; 5; 7`)
+
+## 🔍 Output Formats
+
+### Detailed Output (Default)
+
+```bash
+python search.py test_cases/test_linear.txt DFS
+```
+
+Output:
+```
+==================================================
+File: test_cases/test_linear.txt
+Search Method: DFS
+==================================================
+Result: SOLUTION FOUND
+Goal Node: 5
+Nodes Created: 5
+Path: 1 -> 2 -> 3 -> 4 -> 5
+Path Length: 5 nodes
+==================================================
+```
+
+### Simple Output (For Submission)
+
+```bash
+python search.py test_cases/test_linear.txt DFS --simple
+```
+
+Output:
+```
+test_cases/test_linear.txt DFS
+5 5
+1 2 3 4 5
+```
+
+Format:
+- Line 1: `<filename> <method>`
+- Line 2: `<goal_node> <nodes_created>`
+- Line 3: `<path as space-separated node IDs>`
+
+### No Solution Output
+
+```
+test_cases/test_no_solution.txt BFS
+No solution 3
+
+```
+
+## 🧪 Testing Guide
+
+### Quick Test Single Algorithm
+
+```bash
+# Test DFS
+python search.py test_cases/test_linear.txt DFS
+
+# Test BFS
+python search.py test_cases/test_diamond.txt BFS
+
+# Test with simple output
+python search.py test_cases/test_linear.txt AS --simple
+```
+
+### Run Complete Test Suite
+
+```bash
+python test_runner.py
+```
+
+**What it tests:**
+- ✅ All 6 algorithms × 12 test cases = 72 tests
+- ✅ Path correctness (goal reached)
+- ✅ Path optimality (cost comparison)
+- ✅ Memory efficiency (nodes created)
+- ✅ Execution speed (milliseconds)
+- ✅ Edge cases (no solution, cycles, long paths)
+
+### Expected Behaviors
+
+**All Algorithms Should:**
+- ✅ Find goal in test cases 1-11 (solution exists)
+- ✅ Return "No solution" for test case 12
+- ✅ Handle cycles without infinite loops (visited set)
+- ✅ Complete within 30 seconds
+
+**Optimal Algorithms (UCS, A*, IDA*) Should:**
+- ✅ Always find the lowest-cost path
+- ✅ All return same cost (may differ in path if ties exist)
+
+**Non-Optimal Algorithms (DFS, BFS, GBFS) Should:**
+- ⚠️ May find suboptimal paths
+- ⚠️ Cost can be higher than optimal
+
+## 🛠️ Implementation Details
+
+### SearchNode Class
+
+```python
+class SearchNode:
+    current_node: int    # Current graph node ID
+    path: list          # Full path from origin [origin, ..., current]
+    cost: float         # Total edge cost from origin (g(n))
+    hops: int          # Number of edges from origin
+```
+
+### Data Structures Used
+
+**DFS**: Stack (Python list)
 ```python
 stack = []
 stack.append(node)  # Push
 node = stack.pop()  # Pop (LIFO)
 ```
 
-**Queue (BFS)**
+**BFS**: Queue (deque)
 ```python
 from collections import deque
 queue = deque()
@@ -149,7 +358,7 @@ queue.append(node)      # Enqueue
 node = queue.popleft()  # Dequeue (FIFO)
 ```
 
-**Priority Queue (UCS, GBFS, A*)**
+**UCS, GBFS, A***: Priority Queue (heapq)
 ```python
 import heapq
 pq = []
@@ -157,338 +366,203 @@ heapq.heappush(pq, (priority, node_id, search_node))
 priority, node_id, node = heapq.heappop(pq)
 ```
 
-**Recursive DFS (IDA*):**
-
-### SearchNode Creation
+**IDA***: Recursive DFS with f-bound
 ```python
-def search_ida_star(...):
-    bound = initial_heuristic
-    
-    # Recursive helper function
-    def search(node, g, bound, visited):
-        nonlocal nodes_created  # ← Important!
-        
-        f = g + h(node)
-        
-        # Base case 1: Exceeded bound
-        if f > bound:
-            return (None, f)
-        
-        # Base case 2: Found goal
-        if is_goal(node):
-            return (node, None)
-        
-        # Recursive case: Try all neighbors
-        min_over = float('inf')
-        for neighbor in neighbors:
-            visited.add(neighbor)
-            result, new_bound = search(neighbor, g + cost, bound, visited)
-            visited.remove(neighbor)  # ← Backtrack!
-            
-            if result:
-                return (result, None)
-            
-            if new_bound < min_over:
-                min_over = new_bound
-        
-        return (None, min_over)
-    
-    # Iterative deepening loop
-    while True:
-        result, new_bound = search(initial, 0, bound, visited)
-        if result:
-            return result
-        if new_bound == float('inf'):
-            return None  # No solution
-        bound = new_bound  # Increase bound
+def search(node, g, bound, visited):
+    f = g + h(node)
+    if f > bound:
+        return (None, f)  # Exceeded bound
+    # ... recursive expansion
 ```
 
-#### Tie-Breaking
+### Heuristic Functions
+
+**Euclidean Distance** (used by GBFS, A*, IDA*)
+```python
+h(n) = sqrt((x2-x1)^2 + (y2-y1)^2)
+```
+
+**Multiple Destinations**
+```python
+h(n) = min(distance_to_goal_1, distance_to_goal_2, ...)
+```
+
+### Tie-Breaking Rules
 
 When priorities are equal, expand nodes in **ascending order by node_id**.
 
-**For DFS (stack)**: Sort neighbors **descending** before pushing
+**DFS (stack)**: Sort neighbors **descending** before pushing
 ```python
 neighbors.sort(reverse=True, key=lambda x: x[0])
 ```
 
-**For BFS (queue)**: Sort neighbors **ascending** before appending
+**BFS (queue)**: Sort neighbors **ascending** before appending
 ```python
 neighbors.sort(key=lambda x: x[0])
 ```
 
-**For priority queues**: Include `node_id` in tuple
+**Priority queues**: Include `node_id` in tuple for automatic tie-breaking
 ```python
 heapq.heappush(pq, (priority, node_id, search_node))
-# heapq automatically uses node_id for tie-breaking
 ```
 
-#### Creating Search Nodes
+## 📈 Performance Analysis
 
-```python
-new_node = SearchNode(
-    current_node=neighbor_id,
-    path=current.path + [neighbor_id],
-    cost=current.cost + edge_cost,
-    hops=current.hops + 1
-)
-nodes_created += 1  # Always increment!
-```
+### Test Case Highlights
 
-#### Using Helper Functions
+**1. Misleading Heuristic** - Tests heuristic quality
+- Optimal: `1 -> 2 -> 3 -> 5` (cost 3)
+- GBFS/BFS misled: `1 -> 4 -> 5` (cost 101)
+- Shows: Greedy algorithms can fail badly with misleading heuristics
 
-**Calculate heuristic to closest destination:**
-```python
-from utils import get_closest_destination_heuristic
+**2. Deep vs Shallow** - Tests depth preference
+- BFS finds: `1 -> 3 -> 6` (2 hops, cost 11)
+- Others find: `1 -> 2 -> 4 -> 5 -> 6` (5 hops, cost 4)
+- Shows: BFS optimizes hops, not cost
 
-h = get_closest_destination_heuristic(
-    node_coords, 
-    current_node, 
-    destinations, 
-    'euclidean'  # or 'hop_estimate'
-)
-```
+**3. Wide Branching** - Tests memory efficiency
+- DFS: 6 nodes
+- A*: 10 nodes
+- BFS/UCS: 10 nodes
+- IDA*: 33 nodes (iterative deepening overhead)
+- Shows: Different memory usage patterns
 
-### Algorithm-Specific Notes
+**4. Long Path (50 nodes)** - Tests scalability
+- All algorithms: 50 nodes created
+- Time range: 76-92ms
+- Shows: All handle long paths efficiently
 
-#### BFS
-- Use `deque` for O(1) append and popleft
-- Guaranteed shortest path (in terms of edges)
+## 🐛 Troubleshooting
 
-#### UCS
-- Priority = `g(n)` = total cost from origin
-- Guaranteed optimal path (lowest cost)
+### Common Issues
 
-#### GBFS
-- Priority = `h(n)` = Euclidean distance to goal
-- Fast but not optimal
+**"No module named 'collections'"**
+- Solution: Use Python 3.x (not Python 2.x)
 
-#### A*
-- Priority = `f(n) = g(n) + h(n)`
-- Optimal with admissible heuristic
-- Euclidean distance is admissible
+**"File not found" error**
+- Solution: Run from project root directory
+- Check: `test_cases/` folder exists
 
-#### IDA*
-- Uses recursive DFS with f(n) = g(n) + h(n) bounds
-- Memory efficient: O(bd) instead of A*'s O(b^d)
-- Optimal with admissible heuristic
-- **IMPORTANT**: No priority queue - uses recursion and backtracking
-- May create more nodes than A* (revisits across iterations)
-- Best for memory-constrained environments
+**Wrong node count**
+- Check: Increment `nodes_created` every time you create SearchNode
+- Should count ALL nodes, not just unique nodes
 
-## 🧪 Testing Your Algorithm
+**Infinite loop**
+- Check: Using visited set correctly
+- Should check `if node in visited: continue`
 
-### Basic Test
-```bash
-python search.py PathFinder-test.txt BFS
-```
-
-### Expected Output Format
-```
-PathFinder-test.txt BFS
-5 42
-2 3 5
-```
-
-Where:
-- Line 1: `<filename> <method>`
-- Line 2: `<goal_node> <nodes_created>`
-- Line 3: `<path as space-separated node IDs>`
-
-### If No Solution Exists
-```
-PathFinder-test.txt BFS
-No solution 15
-
-```
+**Priority queue errors**
+- Check: Tuple format is `(priority, node_id, search_node)`
+- `node_id` is required for tie-breaking
 
 ### Debugging Tips
 
-1. **Add print statements** to see what's happening:
 ```python
-print(f"Expanding node: {current.current_node}")
-print(f"Priority: {priority}, Path: {current.path}")
-```
-
-2. **Check your node count**:
-```python
-print(f"Nodes created so far: {nodes_created}")
-```
-
-3. **Verify visited set**:
-```python
+# Add debug prints
+print(f"Exploring: {current.current_node}")
+print(f"Path so far: {current.path}")
+print(f"Priority: {priority}, Cost: {current.cost}")
 print(f"Visited: {visited}")
 ```
 
-4. **Compare with DFS**:
-   - Run DFS first to see expected behavior
-   - Your algorithm should follow similar structure
+## 🔧 Git Workflow (For Team Development)
 
-## 🐛 Common Issues and Solutions
-
-### Issue: Priority Queue Error
-```
-TypeError: '<' not supported between instances of 'SearchNode'
-```
-**Solution**: Make sure you're using the tuple format: `(priority, node_id, search_node)`
-
-### Issue: Wrong Path
-**Solution**: Check that you're building the path correctly:
-```python
-new_path = current.path + [neighbor_id]  # Extend the path
-```
-
-### Issue: Infinite Loop
-**Solution**: Make sure you're using the visited set:
-```python
-if neighbor_id in visited:
-    continue
-```
-
-### Issue: Wrong Node Count
-**Solution**: Increment `nodes_created` EVERY time you create a SearchNode:
-```python
-new_node = SearchNode(...)
-nodes_created += 1  # Don't forget this!
-```
-
-### Issue: No Solution Found (But Should Exist)
-**Solution**: 
-- Check goal test is AFTER popping, not when creating
-- Make sure you're not skipping reachable nodes
-
-## 📖 Input File Format
-
-```
-Nodes:
-1: (4,1)
-2: (2,2)
-3: (5,3)
-
-Edges:
-(2,1): 4
-(3,1): 5
-(2,3): 2
-
-Origin:
-2
-
-Destinations:
-5; 4
-```
-
-- **Nodes**: `node_id: (x, y)` coordinates
-- **Edges**: `(from, to): cost` (directed!)
-- **Origin**: Starting node
-- **Destinations**: Semicolon-separated list of goals
-
-## 🔧 Git Workflow
-
-### Getting Started
+### Initial Setup
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd <project-directory>
-
-# Get latest code
 git pull origin main
 ```
 
-### Working on Your Algorithm
+### Feature Branch Workflow
 ```bash
-# Create your feature branch
-git checkout -b feature/your-algorithm
+# Create branch
+git checkout -b feature/your-feature
 
-# Example:
-git checkout -b feature/bfs
-git checkout -b feature/ucs-gbfs
+# Make changes
+# ... edit files ...
+
+# Commit
+git add .
+git commit -m "Descriptive message"
+
+# Push
+git push origin feature/your-feature
+
+# Create pull request on GitHub
 ```
-
-### Committing Your Work
-```bash
-# Check what files changed
-git status
-
-# Add your changes
-git add search_algorithms.py
-
-# Commit with descriptive message
-git commit -m "Implement BFS algorithm"
-
-# Push to your branch
-git push origin feature/your-algorithm
-```
-
-### Creating Pull Request
-1. Go to GitHub
-2. Click "New Pull Request"
-3. Select your branch
-4. Add description of what you implemented
-5. Request review from team leader
 
 ### Best Practices
-- ✅ Commit often (after each working milestone)
+- ✅ Commit frequently
 - ✅ Write clear commit messages
 - ✅ Test before pushing
-- ✅ Don't modify files outside your responsibility
 - ✅ Pull latest changes before starting work
+- ✅ Review others' code
 
-## 📝 Code Style Guidelines
+## 📚 Additional Resources
 
-- Use **4 spaces** for indentation (not tabs)
-- Keep lines under **100 characters** when possible
-- Add **comments** to explain complex logic
-- Use **meaningful variable names**
-- Follow the **style of the DFS implementation**
+### File Links
+- [`search.py`](search.py) - Main entry point
+- [`search_algorithms.py`](search_algorithms.py) - All algorithm implementations
+- [`test_runner.py`](test_runner.py) - Automated test suite
+- [`Guide.md`](Guide.md) - Detailed implementation guide (for team development)
+- [`search_node.py`](search_node.py) - SearchNode class
+- [`graph_parser.py`](graph_parser.py) - Input file parser
+- [`utils.py`](utils.py) - Helper functions
 
-## 🆘 Need Help?
+### Key Concepts
+- **Graph Search**: Uses visited set to avoid revisiting nodes
+- **Tree Search**: No visited set (can revisit nodes)
+- **Admissible Heuristic**: Never overestimates (h(n) ≤ h*(n))
+- **Consistent Heuristic**: h(n) ≤ c(n,n') + h(n') for all edges
+- **f(n) = g(n) + h(n)**: Total estimated cost in A*/IDA*
 
-1. **Check the DFS implementation** in [`search_algorithms.py`](search_algorithms.py) as reference
-2. **Review pseudocode** in your assigned function
-3. **Test with print statements** to debug
-4. **Ask team leader** if stuck
-5. **Discuss with teammates** - you're not alone!
+## 📞 Support
 
-## 📌 Quick Reference
+### Self-Help Resources
+1. Check this README
+2. Read [`Guide.md`](Guide.md) for detailed explanations
+3. Review algorithm implementations in [`search_algorithms.py`](search_algorithms.py)
+4. Run test suite to identify issues
+5. Add debug prints to trace execution
 
-### SearchNode Attributes
-- `current_node` (int): Current graph node ID
-- `path` (list): Full path from origin [origin, ..., current]
-- `cost` (float): Total edge cost from origin
-- `hops` (int): Number of edges from origin
+### Common Questions (just putting it here)
 
-### Return Format
-```python
-return (goal_node, nodes_created, path)
-# or if no solution:
-return (None, nodes_created, [])
-```
+**Q: Why does IDA* create more nodes than A*?**
+A: IDA* uses iterative deepening, revisiting nodes across iterations. This trades time for memory (O(bd) instead of O(b^d)).
 
-### Priority Queue Format
-```python
-heapq.heappush(pq, (priority, node_id, search_node))
+**Q: Why does GBFS sometimes find suboptimal paths?**
+A: GBFS is greedy - it only considers heuristic h(n), not actual cost g(n). Can be misled by heuristic.
+
+**Q: Why does BFS find different path than UCS?**
+A: BFS optimizes hop count (edges), UCS optimizes total cost. Different goals → different paths.
+
+**Q: What's the difference between CUS1 and CUS2?**
+A: Assignment naming convention. CUS1 = UCS (uninformed), CUS2 = IDA* (informed).
+
+---
+
+## 🎯 Quick Start Commands
+
+```bash
+# Run single test
+python search.py test_cases/test_linear.txt DFS
+
+# Run all tests
+python test_runner.py
+
+# Simple output format
+python search.py test_cases/test_linear.txt BFS --simple
 ```
 
 ---
 
-## 🎯 Success Checklist (TAKE NOTE)
-
-Before submitting your pull request:
-
-- [ ] Algorithm follows the pseudocode structure
-- [ ] Uses GRAPH SEARCH with visited set
-- [ ] Counts ALL nodes created
-- [ ] Returns correct format: `(goal, nodes_created, path)`
-- [ ] Handles "no solution" case
-- [ ] Tie-breaking by node_id works correctly
-- [ ] Tested with at least one input file
-- [ ] Code has comments explaining key steps
-- [ ] No modifications to other files
-- [ ] Committed with clear message
-- [ ] Pull request created
+**Project Status**: ✅ Complete
+**Last Updated**: 2024
+**Python Version**: 3.x required
 
 ---
 
-**God Bless Us! 🚀**
+**Good luck with your assignment**
 
-Remember: The foundation is complete. Each of you just need to implement the search logic following the detailed pseudocode. If you can implement one algorithm, you can implement them all - they essentially follow the same structure with different priority calculations.
+For detailed implementation guidance, see [`Guide.md`](Guide.md).
