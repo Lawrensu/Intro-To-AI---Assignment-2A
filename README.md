@@ -57,12 +57,12 @@ python search.py PathFinder-test.txt CUS2
 
 ## 👥 Team Member Assignments
 
-### ✅ Lawrence: DFS (COMPLETED)
+### Lawrence: DFS 
 - **File**: `search_algorithms.py`
 - **Function**: `search_dfs()`
 - **Status**: ✅ Fully implemented as reference example
 
-### 🔨 Jason: BFS
+### Jason: BFS
 - **File**: `search_algorithms.py`
 - **Function**: `search_bfs()`
 - **What to do**: Follow the detailed pseudocode in the function
@@ -71,7 +71,7 @@ python search.py PathFinder-test.txt CUS2
   - Sort neighbors ascending by node_id
   - Mark visited AFTER dequeuing
 
-### 🔨 Elyn: UCS and GBFS
+### Elyn: UCS and GBFS
 - **File**: `search_algorithms.py`
 - **Functions**: `search_ucs()` and `search_gbfs()`
 - **What to do**: Follow the detailed pseudocode in both functions
@@ -80,7 +80,7 @@ python search.py PathFinder-test.txt CUS2
   - **GBFS**: Priority = h(n) = Euclidean distance to goal
   - Use `heapq` with format `(priority, node_id, search_node)`
 
-### 🔨 Faisal: A* and IDA*
+### Faisal: A* and IDA*
 - **File**: `search_algorithms.py`
 - **Functions**: `search_astar()` and `search_ida_star()`
 - **What to do**: Follow the detailed pseudocode in both functions
