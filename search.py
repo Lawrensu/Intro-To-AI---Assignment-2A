@@ -35,12 +35,12 @@ METHOD_MAP = {
     'DFS': search_dfs,
     'BFS': search_bfs,
     'UCS': search_ucs,
-    'CUS1': search_ucs,      # Alternative name for UCS
+    'CUS1': search_ucs,      # Alternative name for UCS (uninformed)
     'GBFS': search_gbfs,
     'AS': search_astar,
-    'ASTAR': search_astar,   # Alternative name for A*
-    'IDA': search_ida_star,
-    'IDASTAR': search_ida_star  # Alternative name for IDA*
+    'ASTAR': search_astar,   # Alternative name for A* 
+    'IDASTAR': search_ida_star,
+    'CUS2': search_ida_star  # Alternative name for IDA* based on the assignment (informed)
 }
 
 
@@ -53,12 +53,13 @@ def print_usage():
     print("  UCS    - Uniform Cost Search (also: CUS1)")
     print("  GBFS   - Greedy Best-First Search")
     print("  AS     - A* Search (also: ASTAR)")
-    print("  CUS2   - Best-First Search with Hop Count")
+    print("  IDASTAR    - IDA* Search (also: IDASTAR, CUS2)")  # ← UPDATED
     print("\nOptions:")
     print("  --simple  Use simple output format (for assignment submission)")
     print("\nExamples:")
     print("  python search.py test_cases/test1.txt DFS")
     print("  python search.py test_cases/test1.txt BFS --simple")
+    print("  python search.py test_cases/test1.txt IDA")
 
 
 def main():
