@@ -321,63 +321,68 @@ def search_gbfs(graph: dict, node_coords: dict, origin: int, destinations: list)
     Returns:
         tuple: (goal_node, nodes_created, path)
     """
-
-    #TODO: Elyn - IMPLEMENT GBFS
-
-    # Initialize priority queue (min-heap)
-    priority_queue = []
+    # TODO: Elyn - IMPLEMENT GBFS
+    # Follow this pseudocode:
     
-    # Calculate initial heuristic for origin
-    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    heapq.heappush(priority_queue, (h_value, origin, initial_node))
-    nodes_created = 1
-
-    # Visited set for GRAPH SEARCH
-    visited = set()
-
-    # Main loop
-    while priority_queue:
-        h_priority, node_id, current = heapq.heappop(priority_queue)
-
-        # Goal test
-        if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
-
-        # Skip if already visited
-        if current.current_node in visited:
-            continue
-
-        # Mark visited
-        visited.add(current.current_node)
-
-        # Expand neighbors
-        neighbors = graph.get(current.current_node, [])
-        for neighbor_id, edge_cost in neighbors:
-            if neighbor_id in visited:
-                continue
-
-            # Heuristic only (greedy): Euclidean distance to closest destination
-            h_neighbor = get_closest_destination_heuristic(
-                node_coords, neighbor_id, destinations, 'euclidean'
-            )
-
-            new_path = current.path + [neighbor_id]
-            new_cost = current.cost + edge_cost  # track cost for completeness
-            new_hops = current.hops + 1
-
-            new_node = SearchNode(
-                current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
-            )
-
-            # Priority is the heuristic; neighbor_id used to break ties deterministically
-            heapq.heappush(priority_queue, (h_neighbor, neighbor_id, new_node))
-            nodes_created += 1
-
-    # No solution found
+    # 1. Import heapq and initialize priority queue
+    #    import heapq
+    #    priority_queue = []
+    
+    # 2. Calculate initial heuristic
+    #    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
+    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    #    heapq.heappush(priority_queue, (h_value, origin, initial_node))
+    #    nodes_created = 1
+    
+    # 3. Initialize visited set
+    #    visited = set()
+    
+    # 4. Main loop: while priority_queue is not empty
+    #    h_priority, node_id, current = heapq.heappop(priority_queue)
+    #    
+    #    # Goal test
+    #    if current.current_node in destinations:
+    #        return (current.current_node, nodes_created, current.path)
+    #    
+    #    # Skip if visited
+    #    if current.current_node in visited:
+    #        continue
+    #    
+    #    # Mark as visited
+    #    visited.add(current.current_node)
+    #    
+    #    # Get neighbors
+    #    neighbors = graph.get(current.current_node, [])
+    #    
+    #    # Expand neighbors
+    #    for neighbor_id, edge_cost in neighbors:
+    #        if neighbor_id in visited:
+    #            continue
+    #        
+    #        # Calculate heuristic h(n) = Euclidean distance to closest destination
+    #        h_value = get_closest_destination_heuristic(
+    #            node_coords, neighbor_id, destinations, 'euclidean'
+    #        )
+    #        
+    #        new_path = current.path + [neighbor_id]
+    #        new_cost = current.cost + edge_cost  # Track cost for completeness
+    #        new_hops = current.hops + 1
+    #        
+    #        new_node = SearchNode(
+    #            current_node=neighbor_id,
+    #            path=new_path,
+    #            cost=new_cost,
+    #            hops=new_hops
+    #        )
+    #        
+    #        # Priority is ONLY the heuristic h(n)
+    #        heapq.heappush(priority_queue, (h_value, neighbor_id, new_node))
+    #        nodes_created += 1
+    
+    # 5. If loop ends without finding goal
+    #    return (None, nodes_created, [])
+    
+    nodes_created = 0
     return (None, nodes_created, [])
 
 
@@ -509,138 +514,92 @@ def search_astar(graph: dict, node_coords: dict, origin: int, destinations: list
     return (None, nodes_created, [])
 
 
-def search_hop_count(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
+def search_ida_star(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
-    Best-First Search with Hop Count heuristic using GRAPH SEARCH.
+    Iterative Deepening A* (IDA*) Search implementation.
     
-    This algorithm uses f(n) = hops + h_hops(n) where:
-    - hops = number of edges traversed (NOT cost, just count)
-    - h_hops(n) = estimated hops to goal (Euclidean distance / 5.0)
-    
-    IMPORTANT: This algorithm minimizes NUMBER OF MOVES, completely ignoring
-    edge costs. It's useful when you want the fewest steps, regardless of cost.
+    IDA* combines A*'s evaluation function f(n) = g(n) + h(n) with iterative deepening 
+    to find optimal paths with minimal memory usage. It performs a series of depth-first 
+    searches with increasing f-value bounds.
     
     Args:
-        graph (dict): Adjacency list representation
-        node_coords (dict): Coordinates of each node
+        graph (dict): Adjacency list representation of the graph
+        node_coords (dict): Node coordinates for heuristic calculation
         origin (int): Starting node ID
         destinations (list): List of goal node IDs
         
     Returns:
         tuple: (goal_node, nodes_created, path)
+            - goal_node: ID of reached destination (None if no path)
+            - nodes_created: Total SearchNode objects created
+            - path: List of node IDs from origin to goal (empty if no path)
     """
-    # TODO: Faisal - IMPLEMENT HOP COUNT BEST-FIRST SEARCH
-    # Follow this pseudocode:
-    
-    # 1. Define constant for hop estimation
-    #    AVERAGE_EDGE_LENGTH = 5.0  # Assume average edge is 5 units
-    #    This converts Euclidean distance to estimated number of hops
-    AVERAGE_EDGE_LENGTH = 5.0
-    
-    
-    # 2. Import heapq and initialize priority queue
-    #    import heapq
-    #    priority_queue = []
-    priority_queue = []
-    
-    # 3. Calculate initial f(n) = hops + h_hops(n)
-    #    hops = 0  # No edges traversed yet
-    #    h_hops = get_closest_destination_heuristic(
-    #        node_coords, origin, destinations, 'hop_estimate'
-    #    )
-    #    # Note: 'hop_estimate' type divides Euclidean distance by 5.0
-    #    
-    #    f_value = hops + h_hops
-    #    
-    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    #    heapq.heappush(priority_queue, (f_value, origin, initial_node))
-    #    nodes_created = 1
-    hops = 0
-    h_hops = get_closest_destination_heuristic(node_coords, origin, destinations, 'hop_estimate')
-    f_value = hops + h_hops
+    nodes_created = 1  # Count initial node
     initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    heapq.heappush(priority_queue, (f_value, origin, initial_node))
-    nodes_created = 1
     
-    # 4. Initialize visited set
-    #    visited = set()
-    visited = set()
+    # Get initial bound from heuristic at start node
+    bound = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
     
-    # 5. Main loop: while priority_queue is not empty
-    #    f_priority, node_id, current = heapq.heappop(priority_queue)
-    #    
-    #    # Goal test
-    #    if current.current_node in destinations:
-    #        return (current.current_node, nodes_created, current.path)
-    #    
-    #    # Skip if visited
-    #    if current.current_node in visited:
-    #        continue
-    #    
-    #    # Mark as visited
-    #    visited.add(current.current_node)
-    #    
-    #    # Get neighbors
-    #    neighbors = graph.get(current.current_node, [])
-    #    
-    #    # Expand neighbors
-    #    for neighbor_id, edge_cost in neighbors:
-    #        if neighbor_id in visited:
-    #            continue
-    #        
-    #        # IMPORTANT: Increment hops by 1 (just count edges, ignore cost!)
-    #        new_hops = current.hops + 1
-    #        
-    #        # Calculate hop heuristic
-    #        h_hops = get_closest_destination_heuristic(
-    #            node_coords, neighbor_id, destinations, 'hop_estimate'
-    #        )
-    #        
-    #        # Calculate f(n) = hops + h_hops
-    #        f_value = new_hops + h_hops
-    #        
-    #        new_path = current.path + [neighbor_id]
-    #        new_cost = current.cost + edge_cost  # Track for completeness
-    #        
-    #        new_node = SearchNode(
-    #            current_node=neighbor_id,
-    #            path=new_path,
-    #            cost=new_cost,
-    #            hops=new_hops  # Store hop count
-    #        )
-    #        
-    #        # Priority is f(n) = hops + h_hops
-    #        heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
-    #        nodes_created += 1
-    while priority_queue:
-        f_value, node_id, current = heapq.heappop(priority_queue)
-        if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
-        if current.current_node in visited:
-            continue
-        visited.add(current.current_node)
-        neighbors = graph.get(current.current_node, [])
-        for neighbor_id, edge_cost in neighbors:
+    def search(node: SearchNode, g_value: float, bound: float, visited: set) -> tuple:
+        nonlocal nodes_created
+        
+        # Calculate f(n) = g(n) + h(n)
+        h_value = get_closest_destination_heuristic(node_coords, node.current_node, destinations, 'euclidean')
+        f_value = g_value + h_value
+        
+        # If f exceeds bound, return f for next iteration
+        if f_value > bound:
+            return (None, f_value)
+            
+        # Goal test
+        if node.current_node in destinations:
+            return (node, None)
+            
+        min_over = float('inf')
+        
+        # Get neighbors and sort for consistent tie-breaking
+        neighbors = graph.get(node.current_node, [])
+        neighbor_list = [(nid, cost) for nid, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])
+        
+        # Try each neighbor
+        for neighbor_id, edge_cost in neighbor_list:
             if neighbor_id in visited:
                 continue
-            new_hops = current.hops + 1
-            h_hops = get_closest_destination_heuristic(
-                node_coords, neighbor_id, destinations, 'hop_estimate'
-            )
-            f_value = new_hops + h_hops
-            new_path = current.path + [neighbor_id]
-            new_cost = current.cost + edge_cost
+                
+            # Create new node and count it
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
+                path=node.path + [neighbor_id],
+                cost=node.cost + edge_cost,
+                hops=node.hops + 1
             )
-            heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
             nodes_created += 1
-    # 6. If loop ends without finding goal
-    #    return (None, nodes_created, [])
-    return (None, nodes_created, [])
+            
+            # Recursive DFS within bound
+            visited.add(neighbor_id)
+            result, new_bound = search(new_node, g_value + edge_cost, bound, visited)
+            visited.remove(neighbor_id)
+            
+            # If solution found, propagate it up
+            if result is not None:
+                return (result, None)
+                
+            # Track minimum f that exceeded bound
+            if new_bound < min_over:
+                min_over = new_bound
+                
+        return (None, min_over)
     
-    nodes_created = 0
-    return (None, nodes_created, [])
+    # Main IDA* loop
+    while True:
+        visited = {origin}
+        result, new_bound = search(initial_node, 0, bound, visited)
+        
+        if result is not None:
+            return (result.current_node, nodes_created, result.path)
+            
+        if new_bound == float('inf'):
+            return (None, nodes_created, [])
+            
+        bound = new_bound
