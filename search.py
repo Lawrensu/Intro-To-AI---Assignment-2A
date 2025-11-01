@@ -101,14 +101,14 @@ def main():
         # Get the appropriate search function
         search_function = METHOD_MAP[method]
         
-        # Execute the search algorithm
-        goal, nodes_created, path = search_function(graph, node_coords, origin, destinations)
+        # Execute the search algorithm and get both paths
+        goal, nodes_created, path, second_goal, second_path = search_function(graph, node_coords, origin, destinations)
         
         # Format and print the output (choose format based on flag)
         if use_simple_output:
-            format_output_simple(filename, method, goal, nodes_created, path)
+            format_output_simple(filename, method, goal, nodes_created, path, second_goal, second_path)
         else:
-            format_output(filename, method, goal, nodes_created, path)
+            format_output(filename, method, goal, nodes_created, path, second_goal, second_path)
         
     except FileNotFoundError as e:
         print("=" * 50)

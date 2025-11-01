@@ -23,11 +23,12 @@ def euclidean_distance(coord1: tuple, coord2: tuple) -> float:
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
-def format_output(filename: str, method: str, goal, nodes_created: int, path: list):
+def format_output(filename: str, method: str, goal, nodes_created: int, path: list, second_goal=None, second_path=None):
     """
     Print output in a more informative and readable format.
     
     Output format includes labels and separators to make it clear what each value represents.
+    Shows both best and second-best solutions when available.
     
     Args:
         filename (str): Name of the input file
@@ -35,6 +36,8 @@ def format_output(filename: str, method: str, goal, nodes_created: int, path: li
         goal (int): Goal node ID that was reached (None if no solution)
         nodes_created (int): Total number of SearchNode objects created
         path (list): List of node IDs from origin to goal
+        second_goal: Goal node ID for second-best solution (None if not found)
+        second_path: Path for second-best solution (None if not found)
         
     Example:
         >>> format_output("test.txt", "DFS", 5, 42, [2, 3, 5])
@@ -60,23 +63,32 @@ def format_output(filename: str, method: str, goal, nodes_created: int, path: li
         print(f"Nodes Created: {nodes_created}")
         print("Path: None")
     else:
-        # Solution found
+        # Best solution found
         print(f"Result: SOLUTION FOUND")
+        print("Best Solution:")
         print(f"Goal Node: {goal}")
         print(f"Nodes Created: {nodes_created}")
         
-        # Format path with arrows for better visualization
+        # Format best path with arrows for better visualization
         if path:
             path_str = ' -> '.join(map(str, path))
             print(f"Path: {path_str}")
             print(f"Path Length: {len(path)} nodes")
         else:
             print("Path: Empty")
+            
+        # Show second-best solution if available
+        if second_goal is not None and second_path:
+            print("\nSecond-Best Solution:")
+            print(f"Goal Node: {second_goal}")
+            second_path_str = ' -> '.join(map(str, second_path))
+            print(f"Path: {second_path_str}")
+            print(f"Path Length: {len(second_path)} nodes")
     
     print("=" * 50)
     print()  
 
-def format_output_simple(filename: str, method: str, goal, nodes_created: int, path: list):
+def format_output_simple(filename: str, method: str, goal, nodes_created: int, path: list, second_goal=None, second_path=None):
     """
     Print output in the original simple format (for assignment submission).
     
