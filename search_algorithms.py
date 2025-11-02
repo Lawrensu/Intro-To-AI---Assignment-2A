@@ -607,49 +607,66 @@ def search_ida_star(graph: dict, node_coords: dict, origin: int, destinations: l
     Returns:
         tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    def ida_search(node, f_limit, path_cost, solutions, nodes_created):
+    def ida_search(current_node, f_limit, current_path, current_cost, solutions, nodes_created):
+        # Calculate f(n) = g(n) + h(n)
+        h = get_closest_destination_heuristic(node_coords, current_node, destinations)
+        f = current_cost + h
         
-        
-        if node in destinations:
-            solutions.append((node, nodes_created[0], path + [node]))
+        # If f exceeds limit, return f as new minimum for next iteration
+        if f > f_limit:
+            return f, nodes_created
+            
+        # Goal test
+        if current_node in destinations:
+            # Create SearchNode for consistent solution handling
+            solution_node = SearchNode(
+                current_node=current_node,
+                path=current_path,
+                cost=current_cost,
+                hops=len(current_path) - 1
+            )
+            solutions.append(solution_node)
             return float('inf'), nodes_created
-        
+            
         min_f = float('inf')
-        neighbors = graph.get(node, [])
+        neighbors = graph.get(current_node, [])
         neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
-        neighbor_list.sort(key=lambda x: x[0])
+        neighbor_list.sort(key=lambda x: x[0])  # Consistent ordering
         
         for neighbor_id, edge_cost in neighbor_list:
-            if neighbor_id not in path:
+            if neighbor_id not in current_path:  # Tree search - only check path
                 nodes_created[0] += 1
-                path.append(neighbor_id)
-                f_next, _ = ida_search(neighbor_id, f_limit, path_cost + edge_cost, solutions, nodes_created)
-                min_f = min(min_f, f_next)
-                path.pop()
-        
+                # Recursively search with updated path and cost
+                next_f, _ = ida_search(
+                    neighbor_id,
+                    f_limit,
+                    current_path + [neighbor_id],
+                    current_cost + edge_cost,
+                    solutions,
+                    nodes_created
+                )
+                min_f = min(min_f, next_f)
+                
         return min_f, nodes_created
 
     nodes_created = [1]  # Using list to allow modification in nested function
     solutions = []
     initial_h = get_closest_destination_heuristic(node_coords, origin, destinations)
-    f_bound = initial_h
-    path = [origin]
+    f_limit = initial_h  # Initial f-limit is just the heuristic
+    initial_path = [origin]
     
     while True:
-        next_f, _ = ida_search(origin, f_bound, 0, solutions, nodes_created)
+        next_f, _ = ida_search(origin, f_limit, initial_path, 0, solutions, nodes_created)
+        
+        # No solution exists if we've exhausted all possibilities
         if not solutions and next_f == float('inf'):
             return None, nodes_created[0], [], None, []
+            
+        # If we have solutions, process them
         if solutions:
-            # Sort solutions by path length (cost)
-            solutions.sort(key=lambda x: len(x[2]))
-            if len(solutions) >= 2:
-                # Return best and second-best
-                best = solutions[0]
-                second = solutions[1]
-                return best[0], best[1], best[2], second[0], second[2]
-            else:
-                # Only one solution found
-                best = solutions[0]
-                return best[0], best[1], best[2], None, []
-        f_bound = next_f
+            best, second = _select_two_best(solutions)
+            return _format_two_results(best, second, nodes_created[0])
+            
+        # No solutions found yet at this f-limit, increase bound and continue
+        f_limit = next_f
     
