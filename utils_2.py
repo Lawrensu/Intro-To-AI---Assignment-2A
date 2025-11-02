@@ -1,0 +1,191 @@
+import math
+
+
+def euclidean_distance(coord1: tuple, coord2: tuple) -> float:
+    """
+    Calculate Euclidean distance between two points.
+    
+    Uses the formula: sqrt((x2-x1)^2 + (y2-y1)^2)
+    
+    Args:
+        coord1 (tuple): (x, y) coordinates of first point
+        coord2 (tuple): (x, y) coordinates of second point
+        
+    Returns:
+        float: Euclidean distance between the two points
+        
+    Example:
+        >>> euclidean_distance((0, 0), (3, 4))
+        5.0
+    """
+    x1, y1 = coord1
+    x2, y2 = coord2
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+
+def format_output(filename: str, method: str, goal, nodes_created: int, path: list, second_goal=None, second_path=None):
+    """
+    Print output in a more informative and readable format.
+    
+    Output format includes labels and separators to make it clear what each value represents.
+    Shows both best and second-best solutions when available.
+    
+    Args:
+        filename (str): Name of the input file
+        method (str): Search method used (e.g., "DFS", "BFS")
+        goal (int): Goal node ID that was reached (None if no solution)
+        nodes_created (int): Total number of SearchNode objects created
+        path (list): List of node IDs from origin to goal
+        second_goal: Goal node ID for second-best solution (None if not found)
+        second_path: Path for second-best solution (None if not found)
+        
+    Example:
+        >>> format_output("test.txt", "DFS", 5, 42, [2, 3, 5])
+        ==========================================
+        File: test.txt
+        Search Method: DFS
+        ==========================================
+        Goal Node: 5
+        Nodes Created: 42
+        Path: 2 -> 3 -> 5
+        Path Length: 3 nodes
+        ==========================================
+    """
+    # Print header with file and method information
+    print("=" * 50)
+    print(f"File: {filename}")
+    print(f"Search Method: {method}")
+    print("=" * 50)
+    
+    if goal is None:
+        # If no solution found
+        print("Result: NO SOLUTION FOUND")
+        print(f"Nodes Created: {nodes_created}")
+        print("Path: None")
+    else:
+        # Best solution found
+        print(f"Result: SOLUTION FOUND")
+        print("Best Solution:")
+        print(f"Goal Node: {goal}")
+        print(f"Nodes Created: {nodes_created}")
+        
+        # Format best path with arrows for better visualization
+        if path:
+            path_str = ' -> '.join(map(str, path))
+            print(f"Path: {path_str}")
+            print(f"Path Length: {len(path)} nodes")
+        else:
+            print("Path: Empty")
+            
+        # Show second-best solution if available
+        if second_goal is not None and second_path:
+            print("\nSecond-Best Solution:")
+            print(f"Goal Node: {second_goal}")
+            second_path_str = ' -> '.join(map(str, second_path))
+            print(f"Path: {second_path_str}")
+            print(f"Path Length: {len(second_path)} nodes")
+    
+    print("=" * 50)
+    print()  
+
+def format_output_simple(filename, method, goal, nodes_created, path, second_path, best_cost, second_cost):
+    """
+    Prints the search result in a new, 3-line simple format for the test runner.
+    
+    Line 1: goal nodes_explored best_path_cost second_path_cost
+    Line 2: best_path_as_space_separated_nodes
+    Line 3: second_best_path_as_space_separated_nodes (or '-')
+    """
+    # Case 1: No solution was found by the algorithm
+    if goal is None:
+        # The test runner expects a specific "No solution" line
+        print(f"No solution found after exploring {nodes_created} nodes.")
+        return
+
+    # Case 2: A solution was found
+    # Format the costs. The second cost might not exist.
+    second_cost_str = f"{second_cost:.1f}" if second_cost is not None else "-"
+    
+    # Line 1: goal nodes_explored best_path_cost second_path_cost
+    print(f"{goal} {nodes_created} {best_cost:.1f} {second_cost_str}")
+    
+    # Line 2: best_path_as_space_separated_nodes
+    print(" ".join(map(str, path)))
+    
+    # Line 3: second_best_path_as_space_separated_nodes (or '-')
+    if second_path:
+        print(" ".join(map(str, second_path)))
+    else:
+        print("-")
+
+def get_heuristic(node_coords: dict, current_node: int, goal_node: int, 
+                  heuristic_type: str = 'euclidean') -> float:
+    """
+    Calculate heuristic value based on the specified type.
+    
+    Args:
+        node_coords (dict): Dictionary mapping node IDs to (x, y) coordinates
+        current_node (int): Current node ID
+        goal_node (int): Goal node ID
+        heuristic_type (str): Type of heuristic to use:
+            - 'euclidean': Straight-line distance (default)
+            - 'hop_estimate': Estimated number of hops (distance / 5.0)
+            
+    Returns:
+        float: Heuristic value
+        
+    Example:
+        >>> node_coords = {1: (0, 0), 2: (3, 4)}
+        >>> get_heuristic(node_coords, 1, 2, 'euclidean')
+        5.0
+        >>> get_heuristic(node_coords, 1, 2, 'hop_estimate')
+        1.0
+    """
+    current_coord = node_coords[current_node]
+    goal_coord = node_coords[goal_node]
+    
+    distance = euclidean_distance(current_coord, goal_coord)
+    
+    if heuristic_type == 'euclidean':
+        return distance
+    elif heuristic_type == 'hop_estimate':
+        # Estimate number of hops by dividing distance by average edge length
+        # Assuming average edge length is approximately 5 units
+        return distance / 5.0
+    else:
+        raise ValueError(f"Unknown heuristic type: {heuristic_type}")
+
+
+# Used by GBFS, A* and Hop Count
+def get_closest_destination_heuristic(node_coords: dict, current_node: int, 
+                                      destinations: list, heuristic_type: str = 'euclidean') -> float:
+    """
+    Calculate heuristic to the closest destination from multiple possible destinations.
+    
+    This is useful for problems with multiple goal nodes - we use the minimum
+    distance to any destination as our heuristic.
+    
+    Args:
+        node_coords (dict): Dictionary mapping node IDs to (x, y) coordinates
+        current_node (int): Current node ID
+        destinations (list): List of possible destination node IDs
+        heuristic_type (str): Type of heuristic ('euclidean' or 'hop_estimate')
+        
+    Returns:
+        float: Minimum heuristic value to any destination
+        
+    Example:
+        >>> node_coords = {1: (0, 0), 2: (3, 4), 3: (6, 8)}
+        >>> get_closest_destination_heuristic(node_coords, 1, [2, 3])
+        5.0
+    """
+    min_heuristic = float('inf')
+    
+    for dest in destinations:
+        h = get_heuristic(node_coords, current_node, dest, heuristic_type)
+        if h < min_heuristic:
+            min_heuristic = h
+    
+    return min_heuristic
+
+
