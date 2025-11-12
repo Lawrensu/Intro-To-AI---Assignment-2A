@@ -7,6 +7,7 @@ import subprocess
 import time
 import sys
 from pathlib import Path
+from collections import defaultdict
 
 # Test case configurations
 TEST_CASES = [
@@ -90,12 +91,16 @@ def parse_graph_from_file(filename):
     
     return graph
 
+# ==============================================================================
+# MODIFIED FUNCTION: run_search
+# Updated to parse the new 3-line output format from search.py
+# ==============================================================================
 def run_search(filename, algorithm, timeout=30):
-    """Run a single search and return results."""
+    """Run a single search and return results, including best and second-best paths."""
     try:
         start = time.time()
         result = subprocess.run(
-            ["python", "search.py", filename, algorithm, "--simple"],
+            ["python", "search_2.py", filename, algorithm, "--simple"],
             capture_output=True,
             text=True,
             timeout=timeout
@@ -115,25 +120,39 @@ def run_search(filename, algorithm, timeout=30):
                 'path_cost': 0, 'time_ms': elapsed, 'success': False, 'error': 'Invalid output format'
             }
         
-        parts = lines[1].split()
-        if parts[0] == "No":
-            goal = "No solution"
-            nodes = int(parts[2])
-            path = []
-            path_str = "No path"
-            path_cost = 0
-        else:
-            goal = int(parts[0])
-            nodes = int(parts[1])
-            path = lines[2].split() if len(lines) > 2 else []
-            path_str = " -> ".join(path) if path else "Empty"
-            
-            graph = parse_graph_from_file(filename)
-            path_cost = calculate_path_cost(graph, path)
+        # Handle "No solution" case
+        if "No solution" in lines[0]:
+            parts = lines[0].split()
+            return {
+                'goal': "No solution", 'nodes': int(parts[2]), 'path': [], 'path_str': "No path",
+                'path_cost': 0, 'time_ms': elapsed, 'success': True
+            }
+
+        # --- NEW PARSING LOGIC FOR BEST AND SECOND-BEST PATHS ---
+        header_parts = lines[0].split()
+        goal = int(header_parts[0])
+        nodes = int(header_parts[1])
+        best_cost = float(header_parts[2])
+        second_cost_str = header_parts[3]
+
+        best_path = lines[1].split()
+        best_path_str = " -> ".join(best_path)
+
+        second_path = []
+        second_path_str = '-'
+        if second_cost_str != '-' and len(lines) > 2 and lines[2].strip() != '-':
+            second_path = lines[2].split()
+            second_path_str = " -> ".join(second_path)
         
+        # The main table still shows the single best path for comparison
         return {
-            'goal': goal, 'nodes': nodes, 'path': path, 'path_str': path_str,
-            'path_cost': path_cost, 'time_ms': elapsed, 'success': True
+            'goal': goal, 'nodes': nodes, 'path': best_path, 'path_str': best_path_str,
+            'path_cost': best_cost, 'time_ms': elapsed, 'success': True,
+            # New fields for the detailed summary
+            'best_path_str': best_path_str,
+            'best_cost': best_cost,
+            'second_path_str': second_path_str,
+            'second_cost': float(second_cost_str) if second_cost_str != '-' else None,
         }
         
     except subprocess.TimeoutExpired:
@@ -163,7 +182,7 @@ def print_test_case_header(test_name, description):
     print("-" * 120)
 
 def print_result_row(algo_name, result):
-    """Print a single result row."""
+    """Print a single result row. This function is UNCHANGED."""
     goal_str = str(result['goal']) if result['goal'] != 'No solution' else 'None'
     nodes_str = str(result['nodes'])
     cost_str = f"{result['path_cost']:.1f}" if result['path_cost'] > 0 else "-"
@@ -177,8 +196,12 @@ def print_result_row(algo_name, result):
     
     print(f"{algo_name:<8} | {goal_str:<6} | {nodes_str:<6} | {cost_str:<7} | {time_str:<8} | {path_str:<55} [{status}]")
 
+# ==============================================================================
+# MODIFIED FUNCTION: print_summary
+# Updated to display best and second-best paths for each algorithm.
+# ==============================================================================
 def print_summary(all_results):
-    """Print summary statistics."""
+    """Print summary statistics with best and second-best paths."""
     print(f"\n{'='*120}")
     print(f"{'SUMMARY':^120}")
     print(f"{'='*120}\n")
@@ -201,60 +224,52 @@ def print_summary(all_results):
         
         print(f"  Goal: {list(goals)[0]}")
         
-        # Cost analysis
-        costs = {k: v['path_cost'] for k, v in valid_results.items()}
+        # Cost analysis (using the best path cost)
+        costs = {k: v['best_cost'] for k, v in valid_results.items()}
         min_cost = min(costs.values())
-        max_cost = max(costs.values())
-        
         optimal_algos = [k for k, cost in costs.items() if cost == min_cost]
-        suboptimal_algos = [k for k, cost in costs.items() if cost > min_cost]
         
         print(f"  Optimal Cost: {min_cost:.1f}")
         print(f"    Found by: {', '.join(ALGORITHM_NAMES[a] for a in optimal_algos)}")
         
-        if suboptimal_algos:
-            print(f"  Suboptimal: {', '.join(ALGORITHM_NAMES[a] for a in suboptimal_algos)}")
-            print(f"    Worst cost: {max_cost:.1f} ({max_cost/min_cost:.2f}x optimal)")
-        
         # Memory efficiency
         min_nodes = min(v['nodes'] for v in valid_results.values())
         max_nodes = max(v['nodes'] for v in valid_results.values())
-        
         most_efficient = [k for k, v in valid_results.items() if v['nodes'] == min_nodes]
-        least_efficient = [k for k, v in valid_results.items() if v['nodes'] == max_nodes]
         
-        print(f"  Memory: {min_nodes} - {max_nodes} nodes", end="")
-        if min_nodes != max_nodes:
-            print(f" ({max_nodes/min_nodes:.2f}x ratio)")
-        else:
-            print()
+        print(f"  Memory: {min_nodes} - {max_nodes} nodes")
         print(f"    Most efficient: {', '.join(ALGORITHM_NAMES[a] for a in most_efficient)}")
-        if min_nodes != max_nodes:
-            print(f"    Least efficient: {', '.join(ALGORITHM_NAMES[a] for a in least_efficient)}")
         
         # Speed
         fastest_time = min(v['time_ms'] for v in valid_results.values())
         slowest_time = max(v['time_ms'] for v in valid_results.values())
         fastest = [k for k, v in valid_results.items() if v['time_ms'] == fastest_time]
-        slowest = [k for k, v in valid_results.items() if v['time_ms'] == slowest_time]
         
         print(f"  Speed: {fastest_time:.1f}ms - {slowest_time:.1f}ms")
         print(f"    Fastest: {', '.join(ALGORITHM_NAMES[a] for a in fastest)}")
-        if fastest_time != slowest_time:
-            print(f"    Slowest: {', '.join(ALGORITHM_NAMES[a] for a in slowest)}")
         
-        # Path differences
-        paths = {ALGORITHM_NAMES[k]: (v['path_str'], v['path_cost']) for k, v in valid_results.items()}
-        unique_paths = set((path, cost) for path, cost in paths.values())
-        
-        if len(unique_paths) > 1:
-            print(f"  Different Paths:")
-            for algo, (path, cost) in sorted(paths.items()):
-                display_path = path if len(path) <= 45 else path[:42] + "..."
-                cost_marker = "" if cost == min_cost else f" (suboptimal: {cost:.1f})"
-                print(f"    {algo:6s}: {display_path}{cost_marker}")
+        # --- NEW: Path analysis showing best and second-best ---
+        print(f"  Different Paths:")
+        sorted_algos = sorted(valid_results.keys(), key=lambda a: ALGORITHM_NAMES[a])
+        for algo_key in sorted_algos:
+            result_data = valid_results[algo_key]
+            algo_name = ALGORITHM_NAMES[algo_key]
+            
+            # Display best path
+            best_path_display = result_data['best_path_str']
+            if len(best_path_display) > 65: best_path_display = best_path_display[:62] + "..."
+            print(f"    {algo_name:6s}: Best (Cost {result_data['best_cost']:.1f}): {best_path_display}")
+
+            # Display second-best path if it exists
+            if result_data['second_cost'] is not None:
+                second_path_display = result_data['second_path_str']
+                if len(second_path_display) > 65: second_path_display = second_path_display[:62] + "..."
+                print(f"           Second-Best (Cost {result_data['second_cost']:.1f}): {second_path_display}")
+                print(f"           Total Time: {result_data['time_ms']:.1f}ms")
+            else:
+                print(f"           (No distinct second-best path found)")
     
-    # Overall statistics
+    # Overall statistics (no changes needed here)
     print(f"\n{'='*120}")
     print(f"{'OVERALL STATISTICS':^120}")
     print(f"{'='*120}\n")

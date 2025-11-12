@@ -4,302 +4,174 @@ from search_node import SearchNode
 from utils import euclidean_distance, get_closest_destination_heuristic
 
 
+def _select_two_best(solutions: list):
+    """
+    Return (best_node_or_None, second_node_or_None) from list of SearchNode
+    Sorted by cost, then hops, then path length for deterministic ordering.
+    """
+    if not solutions:
+        return (None, None)
+    sols = sorted(solutions, key=lambda n: (n.cost, n.hops, len(n.path)))
+    best = sols[0]
+    second = sols[1] if len(sols) > 1 else None
+    return (best, second)
+
+
+def _format_two_results(best, second, nodes_created):
+    """
+    Uniform return format for all search algorithms.
+    Returns: (best_goal, nodes_created, best_path, second_goal, second_path)
+    """
+    best_goal = best.current_node if best else None
+    best_path = best.path if best else []
+    second_goal = second.current_node if second else None
+    second_path = second.path if second else []
+    return (best_goal, nodes_created, best_path, second_goal, second_path)
+
+
+
 def search_dfs(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
     Depth-First Search algorithm using GRAPH SEARCH.
+    Returns best and second-best solutions found.
     
-    DFS uses a stack (LIFO - Last In First Out) to explore nodes. It expands
-    the most recently added node first, diving deep into the graph before
-    backtracking. This is memory-efficient but not guaranteed to find the
-    shortest path.
-    
-    GRAPH SEARCH: Uses a visited set to avoid revisiting nodes, preventing
-    infinite loops in graphs with cycles.
-    
-    Args:
-        graph (dict): Adjacency list representation {node_id: [(neighbor_id, cost), ...]}
-        node_coords (dict): Coordinates of each node {node_id: (x, y)}
-        origin (int): Starting node ID
-        destinations (list): List of goal node IDs
-        
     Returns:
-        tuple: (goal_node, nodes_created, path)
-            - goal_node: which destination was reached (None if no solution)
-            - nodes_created: total number of SearchNode objects created
-            - path: list of node IDs from origin to goal (empty list if no solution)
-            
-    Example:
-        >>> graph = {1: [(2, 5)], 2: [(3, 3)], 3: []}
-        >>> coords = {1: (0, 0), 2: (1, 1), 3: (2, 2)}
-        >>> search_dfs(graph, coords, 1, [3])
-        (3, 3, [1, 2, 3])
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    # Initialize the stack with the origin node
-    # Stack is a Python list - use append() to push, pop() to pop (LIFO)
     stack = []
-    
-    # Create the initial search node
-    # Path starts with just the origin node
     initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
     stack.append(initial_node)
-    
-    # Track number of nodes created - increment every time we create a SearchNode
     nodes_created = 1
-    
-    # Track visited nodes to avoid cycles (GRAPH SEARCH)
-    # This prevents infinite loops in graphs with cycles
     visited = set()
-    
-    # Continue until stack is empty (all reachable nodes explored)
+    solutions = []
+
     while stack:
-        # Pop the most recently added node (LIFO - depth-first behavior)
         current = stack.pop()
-        
-        # Goal test: check if we've reached any destination
+
         if current.current_node in destinations:
-            # Success! Return the goal node, total nodes created, and the path
-            return (current.current_node, nodes_created, current.path)
-        
-        # Skip if already visited (GRAPH SEARCH prevents revisiting)
+            solutions.append(current)
+            continue
+
         if current.current_node in visited:
             continue
-        
-        # Mark current node as visited
+
         visited.add(current.current_node)
         
-        # Expand current node: get all neighbors from adjacency list
         neighbors = graph.get(current.current_node, [])
-        
-        # Sort neighbors by node_id in DESCENDING order for DFS
-        # Why descending? Stack is LIFO, so we push highest IDs first.
-        # When we pop, we get lowest IDs first, ensuring tie-breaking by ascending node_id.
         neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
         neighbor_list.sort(reverse=True, key=lambda x: x[0])
-        
-        # Create child nodes for all unvisited neighbors
+
         for neighbor_id, edge_cost in neighbor_list:
-            # Skip if already visited (optimization: don't create unnecessary nodes)
             if neighbor_id in visited:
                 continue
             
-            # Create new search node with updated path, cost, and hops
-            new_path = current.path + [neighbor_id]  # Extend path
-            new_cost = current.cost + edge_cost       # Accumulate cost
-            new_hops = current.hops + 1               # Increment hop count
-            
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
+                path=current.path + [neighbor_id],
+                cost=current.cost + edge_cost,
+                hops=current.hops + 1
             )
-            
-            # Push to stack (will be explored soon due to LIFO)
-            stack.append(new_node)
-            
-            # Increment node counter (IMPORTANT: count ALL nodes created)
             nodes_created += 1
+            stack.append(new_node)
+
+    best, second = _select_two_best(solutions)
+    return _format_two_results(best, second, nodes_created)
     
-    # No solution found - explored all reachable nodes without finding destination
-    return (None, nodes_created, [])
 
 
 def search_bfs(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
     Breadth-First Search algorithm using GRAPH SEARCH.
+    Returns best and second-best solutions found.
     
-    BFS uses a queue (FIFO) to explore nodes level by level. Guaranteed to find
-    the shortest path in terms of number of edges (unweighted shortest path).
-    
-    Args:
-        graph (dict): Adjacency list representation
-        node_coords (dict): Coordinates of each node
-        origin (int): Starting node ID
-        destinations (list): List of goal node IDs
-        
     Returns:
-        tuple: (goal_node, nodes_created, path)
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    # Initialize queue
     queue = deque()
-    # Create initial SearchNode and enqueue
     initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
     queue.append(initial_node)
     nodes_created = 1
-
-    # Visited set for GRAPH SEARCH
     visited = set()
+    solutions = []
 
-    # Main loop
     while queue:
         current = queue.popleft()
 
-        # Goal test
         if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
+            solutions.append(current)
+            continue
 
-        # Skip if visited
         if current.current_node in visited:
             continue
 
-        # Mark as visited
         visited.add(current.current_node)
 
-        # Get neighbors and sort ascending by node_id for tie-breaking
         neighbors = graph.get(current.current_node, [])
         neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
         neighbor_list.sort(key=lambda x: x[0])
 
-        # Expand neighbors
         for neighbor_id, edge_cost in neighbor_list:
             if neighbor_id in visited:
                 continue
 
-            new_path = current.path + [neighbor_id]
-            new_cost = current.cost + edge_cost
-            new_hops = current.hops + 1
-
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
+                path=current.path + [neighbor_id],
+                cost=current.cost + edge_cost,
+                hops=current.hops + 1
             )
-
-            queue.append(new_node)
             nodes_created += 1
+            queue.append(new_node)
 
-    # No solution found
-    return (None, nodes_created, [])
+    best, second = _select_two_best(solutions)
+    return _format_two_results(best, second, nodes_created)
 
 def search_ucs(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
-    Uniform Cost Search algorithm using GRAPH SEARCH.
+    Uniform-Cost Search algorithm using GRAPH SEARCH.
+    Returns best and second-best solutions found.
     
-    UCS uses a priority queue ordered by path cost g(n). Always expands the
-    node with the lowest total cost from the origin. Guaranteed to find the
-    least-cost path.
-    
-    Args:
-        graph (dict): Adjacency list representation
-        node_coords (dict): Coordinates of each node
-        origin (int): Starting node ID
-        destinations (list): List of goal node IDs
-        
     Returns:
-        tuple: (goal_node, nodes_created, path)
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    # TODO: Elyn - IMPLEMENT UCS
-    # Follow this pseudocode:
-    
-    # 1. Import and initialize priority queue
-    #    import heapq
-    #    priority_queue = []
-    #    Use heapq.heappush(pq, (priority, node_id, search_node))
-    #    Use heapq.heappop(pq) to get lowest priority
-    
-    # 2. Create initial SearchNode with origin
-    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    #    Priority for UCS is the cost g(n)
-    #    heapq.heappush(priority_queue, (0, origin, initial_node))
-    #    nodes_created = 1
-    
-    # 3. Initialize visited set for GRAPH SEARCH
-    #    visited = set()
-    
-    # 4. Main loop: while priority_queue is not empty
-    #    priority, node_id, current = heapq.heappop(priority_queue)
-    #    
-    #    # Goal test
-    #    if current.current_node in destinations:
-    #        return (current.current_node, nodes_created, current.path)
-    #    
-    #    # Skip if visited
-    #    if current.current_node in visited:
-    #        continue
-    #    
-    #    # Mark as visited
-    #    visited.add(current.current_node)
-    #    
-    #    # Get neighbors
-    #    neighbors = graph.get(current.current_node, [])
-    #    
-    #    # Expand neighbors
-    #    for neighbor_id, edge_cost in neighbors:
-    #        if neighbor_id in visited:
-    #            continue
-    #        
-    #        # Calculate new cost: g(n) = g(parent) + edge_cost
-    #        new_cost = current.cost + edge_cost
-    #        new_path = current.path + [neighbor_id]
-    #        new_hops = current.hops + 1
-    #        
-    #        new_node = SearchNode(
-    #            current_node=neighbor_id,
-    #            path=new_path,
-    #            cost=new_cost,
-    #            hops=new_hops
-    #        )
-    #        
-    #        # Push with cost as priority
-    #        # Tuple format: (priority, node_id, search_node)
-    #        # node_id is for tie-breaking when costs are equal
-    #        heapq.heappush(priority_queue, (new_cost, neighbor_id, new_node))
-    #        nodes_created += 1
-    
-    # 5. If loop ends without finding goal
-    #    return (None, nodes_created, [])
-    
-    # Initialize priority queue (min-heap)
-    priority_queue = []
-    
-    # Create initial node and push with priority = cost (g = 0)
+    pq = []
     initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    heapq.heappush(priority_queue, (0, origin, initial_node))
+    heapq.heappush(pq, (initial_node.cost, initial_node))
     nodes_created = 1
-    
-    # Visited set for GRAPH SEARCH
     visited = set()
-    
-    # Main loop
-    while priority_queue:
-        priority, node_id, current = heapq.heappop(priority_queue)
-        
-        # Goal test
+    solutions = []
+
+    while pq:
+        _, current = heapq.heappop(pq)
+
         if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
-        
-        # Skip if already visited
+            solutions.append(current)
+            continue
+
         if current.current_node in visited:
             continue
-        
-        # Mark visited
+
         visited.add(current.current_node)
-        
-        # Expand neighbors
+
         neighbors = graph.get(current.current_node, [])
-        for neighbor_id, edge_cost in neighbors:
+        neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])
+
+        for neighbor_id, edge_cost in neighbor_list:
             if neighbor_id in visited:
                 continue
-            
-            # Compute new path cost g(n)
-            new_cost = current.cost + edge_cost
-            new_path = current.path + [neighbor_id]
-            new_hops = current.hops + 1
-            
+
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
+                path=current.path + [neighbor_id],
+                cost=current.cost + edge_cost,
+                hops=current.hops + 1
             )
-            
-            # Push with (cost, node_id, node) so tie-breaks use node_id
-            heapq.heappush(priority_queue, (new_cost, neighbor_id, new_node))
             nodes_created += 1
-    
-    # No solution found
-    return (None, nodes_created, [])
+            heapq.heappush(pq, (new_node.cost, new_node))
+
+    best, second = _select_two_best(solutions)
+    return _format_two_results(best, second, nodes_created)
 
 
 def search_gbfs(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
@@ -319,282 +191,183 @@ def search_gbfs(graph: dict, node_coords: dict, origin: int, destinations: list)
         destinations (list): List of goal node IDs
         
     Returns:
-        tuple: (goal_node, nodes_created, path)
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
+            Returns best and second-best solutions sorted by actual path cost,
+            not by heuristic values used during search.
     """
 
     #TODO: Elyn - IMPLEMENT GBFS
 
     # Initialize priority queue (min-heap)
-    priority_queue = []
-    
     # Calculate initial heuristic for origin
-    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    heapq.heappush(priority_queue, (h_value, origin, initial_node))
-    nodes_created = 1
-
     # Visited set for GRAPH SEARCH
+    priority_queue = []
+    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
+    heuristic = get_closest_destination_heuristic(node_coords, origin, destinations)
+    heapq.heappush(priority_queue, (heuristic, initial_node))
+    nodes_created = 1
     visited = set()
+    solutions = []
 
-    # Main loop
     while priority_queue:
-        h_priority, node_id, current = heapq.heappop(priority_queue)
+        _, current = heapq.heappop(priority_queue)
 
         # Goal test
         if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
+            solutions.append(current)
+            continue  # Keep exploring for more solutions
 
         # Skip if already visited
         if current.current_node in visited:
             continue
+        neighbors = graph.get(current.current_node, [])
+        neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])
 
         # Mark visited
         visited.add(current.current_node)
 
         # Expand neighbors
-        neighbors = graph.get(current.current_node, [])
-        for neighbor_id, edge_cost in neighbors:
+            # Heuristic only (greedy): Euclidean distance to closest destination
+        for neighbor_id, edge_cost in neighbor_list:
             if neighbor_id in visited:
                 continue
 
-            # Heuristic only (greedy): Euclidean distance to closest destination
-            h_neighbor = get_closest_destination_heuristic(
-                node_coords, neighbor_id, destinations, 'euclidean'
-            )
-
-            new_path = current.path + [neighbor_id]
-            new_cost = current.cost + edge_cost  # track cost for completeness
-            new_hops = current.hops + 1
-
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=new_cost,
-                hops=new_hops
+                path=current.path + [neighbor_id],
+                cost=current.cost + edge_cost,
+                hops=current.hops + 1
             )
 
             # Priority is the heuristic; neighbor_id used to break ties deterministically
-            heapq.heappush(priority_queue, (h_neighbor, neighbor_id, new_node))
             nodes_created += 1
+            h = get_closest_destination_heuristic(node_coords, neighbor_id, destinations)
+            heapq.heappush(priority_queue, (h, new_node))
 
     # No solution found
-    return (None, nodes_created, [])
+    best, second = _select_two_best(solutions)
+    return _format_two_results(best, second, nodes_created)
 
 
 def search_astar(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
     A* Search algorithm using GRAPH SEARCH.
+    Returns best and second-best solutions found.
     
-    A* uses a priority queue ordered by f(n) = g(n) + h(n).
-    - g(n) = actual cost from origin to current node
-    - h(n) = estimated cost from current node to goal (Euclidean distance)
-    
-    Balances path cost and estimated distance to goal. With admissible heuristic,
-    guaranteed to find optimal path.
-    
-    Args:
-        graph (dict): Adjacency list representation
-        node_coords (dict): Coordinates of each node
-        origin (int): Starting node ID
-        destinations (list): List of goal node IDs
-        
     Returns:
-        tuple: (goal_node, nodes_created, path)
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    # TODO: Faisal - IMPLEMENT A*
-    # Follow this pseudocode:
-    
-    # 1. Import heapq and initialize priority queue
-    #    import heapq
-    #    priority_queue = []
     priority_queue = []
-    
-    # 2. Calculate initial f(n) = g(n) + h(n)
-    #    g_value = 0  # Cost from origin
-    #    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    #    f_value = g_value + h_value
-    #    
-    #    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    #    heapq.heappush(priority_queue, (f_value, origin, initial_node))
-    #    nodes_created = 1
-    g_value = 0
-    h_value = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    f_value = g_value + h_value
     initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    heapq.heappush(priority_queue, (f_value, origin, initial_node))
+    heuristic = get_closest_destination_heuristic(node_coords, origin, destinations)
+    heapq.heappush(priority_queue, (initial_node.cost + heuristic, initial_node))
     nodes_created = 1
-    
-    # 3. Initialize visited set
-    #    visited = set()
     visited = set()
-    
-    # 4. Main loop: while priority_queue is not empty
-    #    f_priority, node_id, current = heapq.heappop(priority_queue)
-    #    
-    #    # Goal test
-    #    if current.current_node in destinations:
-    #        return (current.current_node, nodes_created, current.path)
-    #    
-    #    # Skip if visited
-    #    if current.current_node in visited:
-    #        continue
-    #    
-    #    # Mark as visited
-    #    visited.add(current.current_node)
-    #    
-    #    # Get neighbors
-    #    neighbors = graph.get(current.current_node, [])
-    #    
-    #    # Expand neighbors
-    #    for neighbor_id, edge_cost in neighbors:
-    #        if neighbor_id in visited:
-    #            continue
-    #        
-    #        # Calculate g(n) = cost from origin to neighbor
-    #        g_value = current.cost + edge_cost
-    #        
-    #        # Calculate h(n) = heuristic from neighbor to closest goal
-    #        h_value = get_closest_destination_heuristic(
-    #            node_coords, neighbor_id, destinations, 'euclidean'
-    #        )
-    #        
-    #        # Calculate f(n) = g(n) + h(n)
-    #        f_value = g_value + h_value
-    #        
-    #        new_path = current.path + [neighbor_id]
-    #        new_hops = current.hops + 1
-    #        
-    #        new_node = SearchNode(
-    #            current_node=neighbor_id,
-    #            path=new_path,
-    #            cost=g_value,  # Store g(n) in cost attribute
-    #            hops=new_hops
-    #        )
-    #        
-    #        # Priority is f(n) = g(n) + h(n)
-    #        heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
-    #        nodes_created += 1
+    solutions = []
+
     while priority_queue:
-        f_value, node_id, current = heapq.heappop(priority_queue)
+        _, current = heapq.heappop(priority_queue)
+
         if current.current_node in destinations:
-            return (current.current_node, nodes_created, current.path)
+            solutions.append(current)
+            continue
+
         if current.current_node in visited:
             continue
+
         visited.add(current.current_node)
+
         neighbors = graph.get(current.current_node, [])
-        for neighbor_id, edge_cost in neighbors:
+        neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])
+
+        for neighbor_id, edge_cost in neighbor_list:
             if neighbor_id in visited:
                 continue
-            g_value = current.cost + edge_cost
-            h_value = get_closest_destination_heuristic(
-                node_coords, neighbor_id, destinations, 'euclidean'
-            )
-            f_value = g_value + h_value
-            new_path = current.path + [neighbor_id]
-            new_hops = current.hops + 1
+
             new_node = SearchNode(
                 current_node=neighbor_id,
-                path=new_path,
-                cost=g_value,
-                hops=new_hops
+                path=current.path + [neighbor_id],
+                cost=current.cost + edge_cost,
+                hops=current.hops + 1
             )
-            heapq.heappush(priority_queue, (f_value, neighbor_id, new_node))
             nodes_created += 1
-    
-    # 5. If loop ends without finding goal
-    #    return (None, nodes_created, [])
-    return (None, nodes_created, [])
-    
-    nodes_created = 0
-    return (None, nodes_created, [])
+            h = get_closest_destination_heuristic(node_coords, neighbor_id, destinations)
+            heapq.heappush(priority_queue, (new_node.cost + h, new_node))
+
+    best, second = _select_two_best(solutions)
+    return _format_two_results(best, second, nodes_created)
 
 
 def search_ida_star(graph: dict, node_coords: dict, origin: int, destinations: list) -> tuple:
     """
-    Iterative Deepening A* (IDA*) Search implementation.
+    Iterative Deepening A* Search algorithm using TREE SEARCH.
+    Returns best and second-best solutions found.
     
-    IDA* combines A*'s evaluation function f(n) = g(n) + h(n) with iterative deepening 
-    to find optimal paths with minimal memory usage. It performs a series of depth-first 
-    searches with increasing f-value bounds.
-    
-    Args:
-        graph (dict): Adjacency list representation of the graph
-        node_coords (dict): Node coordinates for heuristic calculation
-        origin (int): Starting node ID
-        destinations (list): List of goal node IDs
-        
     Returns:
-        tuple: (goal_node, nodes_created, path)
-            - goal_node: ID of reached destination (None if no path)
-            - nodes_created: Total SearchNode objects created
-            - path: List of node IDs from origin to goal (empty if no path)
+        tuple: (best_goal, nodes_created, best_path, second_goal, second_path)
     """
-    nodes_created = 1  # Count initial node
-    initial_node = SearchNode(current_node=origin, path=[origin], cost=0, hops=0)
-    
-    # Get initial bound from heuristic at start node
-    bound = get_closest_destination_heuristic(node_coords, origin, destinations, 'euclidean')
-    
-    def search(node: SearchNode, g_value: float, bound: float, visited: set) -> tuple:
-        nonlocal nodes_created
-        
+    def ida_search(current_node, f_limit, current_path, current_cost, solutions, nodes_created):
         # Calculate f(n) = g(n) + h(n)
-        h_value = get_closest_destination_heuristic(node_coords, node.current_node, destinations, 'euclidean')
-        f_value = g_value + h_value
+        h = get_closest_destination_heuristic(node_coords, current_node, destinations)
+        f = current_cost + h
         
-        # If f exceeds bound, return f for next iteration
-        if f_value > bound:
-            return (None, f_value)
+        # If f exceeds limit, return f as new minimum for next iteration
+        if f > f_limit:
+            return f, nodes_created
             
         # Goal test
-        if node.current_node in destinations:
-            return (node, None)
-            
-        min_over = float('inf')
-        
-        # Get neighbors and sort for consistent tie-breaking
-        neighbors = graph.get(node.current_node, [])
-        neighbor_list = [(nid, cost) for nid, cost in neighbors]
-        neighbor_list.sort(key=lambda x: x[0])
-        
-        # Try each neighbor
-        for neighbor_id, edge_cost in neighbor_list:
-            if neighbor_id in visited:
-                continue
-                
-            # Create new node and count it
-            new_node = SearchNode(
-                current_node=neighbor_id,
-                path=node.path + [neighbor_id],
-                cost=node.cost + edge_cost,
-                hops=node.hops + 1
+        if current_node in destinations:
+            # Create SearchNode for consistent solution handling
+            solution_node = SearchNode(
+                current_node=current_node,
+                path=current_path,
+                cost=current_cost,
+                hops=len(current_path) - 1
             )
-            nodes_created += 1
+            solutions.append(solution_node)
+            return float('inf'), nodes_created
             
-            # Recursive DFS within bound
-            visited.add(neighbor_id)
-            result, new_bound = search(new_node, g_value + edge_cost, bound, visited)
-            visited.remove(neighbor_id)
-            
-            # If solution found, propagate it up
-            if result is not None:
-                return (result, None)
-                
-            # Track minimum f that exceeded bound
-            if new_bound < min_over:
-                min_over = new_bound
-                
-        return (None, min_over)
-    
-    # Main IDA* loop
-    while True:
-        visited = {origin}
-        result, new_bound = search(initial_node, 0, bound, visited)
+        min_f = float('inf')
+        neighbors = graph.get(current_node, [])
+        neighbor_list = [(neighbor_id, cost) for neighbor_id, cost in neighbors]
+        neighbor_list.sort(key=lambda x: x[0])  # Consistent ordering
         
-        if result is not None:
-            return (result.current_node, nodes_created, result.path)
+        for neighbor_id, edge_cost in neighbor_list:
+            if neighbor_id not in current_path:  # Tree search - only check path
+                nodes_created[0] += 1
+                # Recursively search with updated path and cost
+                next_f, _ = ida_search(
+                    neighbor_id,
+                    f_limit,
+                    current_path + [neighbor_id],
+                    current_cost + edge_cost,
+                    solutions,
+                    nodes_created
+                )
+                min_f = min(min_f, next_f)
+                
+        return min_f, nodes_created
+
+    nodes_created = [1]  # Using list to allow modification in nested function
+    solutions = []
+    initial_h = get_closest_destination_heuristic(node_coords, origin, destinations)
+    f_limit = initial_h  # Initial f-limit is just the heuristic
+    initial_path = [origin]
+    
+    while True:
+        next_f, _ = ida_search(origin, f_limit, initial_path, 0, solutions, nodes_created)
+        
+        # No solution exists if we've exhausted all possibilities
+        if not solutions and next_f == float('inf'):
+            return None, nodes_created[0], [], None, []
             
-        if new_bound == float('inf'):
-            return (None, nodes_created, [])
+        # If we have solutions, process them
+        if solutions:
+            best, second = _select_two_best(solutions)
+            return _format_two_results(best, second, nodes_created[0])
             
-        bound = new_bound
+        # No solutions found yet at this f-limit, increase bound and continue
+        f_limit = next_f
+    

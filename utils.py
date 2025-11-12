@@ -23,11 +23,12 @@ def euclidean_distance(coord1: tuple, coord2: tuple) -> float:
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
-def format_output(filename: str, method: str, goal, nodes_created: int, path: list):
+def format_output(filename: str, method: str, goal, nodes_created: int, path: list, second_goal=None, second_path=None):
     """
     Print output in a more informative and readable format.
     
     Output format includes labels and separators to make it clear what each value represents.
+    Shows both best and second-best solutions when available.
     
     Args:
         filename (str): Name of the input file
@@ -35,6 +36,8 @@ def format_output(filename: str, method: str, goal, nodes_created: int, path: li
         goal (int): Goal node ID that was reached (None if no solution)
         nodes_created (int): Total number of SearchNode objects created
         path (list): List of node IDs from origin to goal
+        second_goal: Goal node ID for second-best solution (None if not found)
+        second_path: Path for second-best solution (None if not found)
         
     Example:
         >>> format_output("test.txt", "DFS", 5, 42, [2, 3, 5])
@@ -60,59 +63,60 @@ def format_output(filename: str, method: str, goal, nodes_created: int, path: li
         print(f"Nodes Created: {nodes_created}")
         print("Path: None")
     else:
-        # Solution found
+        # Best solution found
         print(f"Result: SOLUTION FOUND")
+        print("Best Solution:")
         print(f"Goal Node: {goal}")
         print(f"Nodes Created: {nodes_created}")
         
-        # Format path with arrows for better visualization
+        # Format best path with arrows for better visualization
         if path:
             path_str = ' -> '.join(map(str, path))
             print(f"Path: {path_str}")
             print(f"Path Length: {len(path)} nodes")
         else:
             print("Path: Empty")
+            
+        # Show second-best solution if available
+        if second_goal is not None and second_path:
+            print("\nSecond-Best Solution:")
+            print(f"Goal Node: {second_goal}")
+            second_path_str = ' -> '.join(map(str, second_path))
+            print(f"Path: {second_path_str}")
+            print(f"Path Length: {len(second_path)} nodes")
     
     print("=" * 50)
     print()  
 
-def format_output_simple(filename: str, method: str, goal, nodes_created: int, path: list):
+def format_output_simple(filename, method, goal, nodes_created, path, second_path, best_cost, second_cost):
     """
-    Print output in the original simple format (for assignment submission).
+    Prints the search result in a new, 3-line simple format for the test runner.
     
-    Use this if you need the exact format specified in the assignment requirements.
-    
-    Output format:
-    Line 1: <filename> <method>
-    Line 2: <goal_node> <nodes_created>
-    Line 3: <path as space-separated node IDs>
-    
-    Args:
-        filename (str): Name of the input file
-        method (str): Search method used (e.g., "DFS", "BFS")
-        goal (int): Goal node ID that was reached (None if no solution)
-        nodes_created (int): Total number of SearchNode objects created
-        path (list): List of node IDs from origin to goal
-        
-    Example:
-        >>> format_output_simple("test.txt", "DFS", 5, 42, [2, 3, 5])
-        test.txt DFS
-        5 42
-        2 3 5
+    Line 1: goal nodes_explored best_path_cost second_path_cost
+    Line 2: best_path_as_space_separated_nodes
+    Line 3: second_best_path_as_space_separated_nodes (or '-')
     """
-    print(f"{filename} {method}")
-    
+    # Case 1: No solution was found by the algorithm
     if goal is None:
-        # No solution found
-        print(f"No solution {nodes_created}")
-        print("")
-    else:
-        # Solution found
-        print(f"{goal} {nodes_created}")
-        # Convert path list to space-separated string
-        path_str = ' '.join(map(str, path))
-        print(path_str)
+        # The test runner expects a specific "No solution" line
+        print(f"No solution found after exploring {nodes_created} nodes.")
+        return
 
+    # Case 2: A solution was found
+    # Format the costs. The second cost might not exist.
+    second_cost_str = f"{second_cost:.1f}" if second_cost is not None else "-"
+    
+    # Line 1: goal nodes_explored best_path_cost second_path_cost
+    print(f"{goal} {nodes_created} {best_cost:.1f} {second_cost_str}")
+    
+    # Line 2: best_path_as_space_separated_nodes
+    print(" ".join(map(str, path)))
+    
+    # Line 3: second_best_path_as_space_separated_nodes (or '-')
+    if second_path:
+        print(" ".join(map(str, second_path)))
+    else:
+        print("-")
 
 def get_heuristic(node_coords: dict, current_node: int, goal_node: int, 
                   heuristic_type: str = 'euclidean') -> float:
@@ -183,3 +187,5 @@ def get_closest_destination_heuristic(node_coords: dict, current_node: int,
             min_heuristic = h
     
     return min_heuristic
+
+
